@@ -58,10 +58,43 @@ if (!/^https:\/\/.+\.supabase\.co\/?$/.test(url)) {
 ok(`URL: ${url}`)
 ok(`キー: ${anonKey.slice(0, 12)}…（${anonKey.length}文字）`)
 
-if (env.SUPABASE_SERVICE_ROLE_KEY || /service_role/.test(anonKey)) {
-  ng('service_role キーが .env.local に入っている可能性があります。')
-  console.log('       service_role キーは RLS を無視できる強力な鍵です。')
-  console.log('       このプロジェクトでは使いません。削除して anon public キーを使ってください。')
+// --- 2b. 危険な鍵を貼っていないか -----------------------------
+// Supabase には2世代のキー形式がある:
+//   旧: JWT（eyJ... で始まる長い文字列。中に role が書いてある）
+//   新: sb_publishable_... （公開用） / sb_secret_... （秘密用）
+function keyRole(key) {
+  if (key.startsWith('sb_secret_')) return 'secret'
+  if (key.startsWith('sb_publishable_')) return 'publishable'
+  if (key.startsWith('eyJ')) {
+    try {
+      const payload = JSON.parse(Buffer.from(key.split('.')[1], 'base64url').toString('utf8'))
+      return payload.role ?? 'unknown'
+    } catch {
+      return 'unknown'
+    }
+  }
+  return 'unknown'
+}
+
+const role = keyRole(anonKey)
+
+if (role === 'service_role' || role === 'secret') {
+  ng('秘密のキー（service_role / secret）が貼られています。ただちに差し替えてください。')
+  console.log('       このキーは RLS を無視して何でもできてしまう強力な鍵です。')
+  console.log('       NEXT_PUBLIC_ で始まる変数はブラウザに送られるため、絶対に入れてはいけません。')
+  console.log('       Supabase の API Keys 画面から anon public（または publishable）キーを使ってください。')
+  process.exit(1)
+}
+
+if (role === 'anon' || role === 'publishable') {
+  ok(`キーの種類: ${role}（公開してよいキー）`)
+} else {
+  console.log(`  ??   キーの種類を判別できませんでした（${role}）。続行して実際に試します。`)
+}
+
+if (env.SUPABASE_SERVICE_ROLE_KEY) {
+  ng('.env.local に SUPABASE_SERVICE_ROLE_KEY が書かれています。')
+  console.log('       このプロジェクトでは使いません。行ごと削除してください。')
   process.exit(1)
 }
 
