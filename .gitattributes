@@ -1,0 +1,12 @@
+# 既定: Gitが自動判定する
+* text=auto
+
+# 手で開いて中身をコピーするファイルは、Windows形式(CRLF)で保つ。
+# LFのままだと一部のエディタで全部が1行に見え、
+# 先頭の -- コメントがSQL全体を無効化してしまう事故が起きるため。
+*.sql     text eol=crlf
+.env.example text eol=crlf
+
+# バイナリ扱い（変換しない）
+*.png binary
+*.ico binary

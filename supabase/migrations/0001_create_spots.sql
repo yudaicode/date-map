@@ -140,3 +140,16 @@ create policy "ログイン済みは削除できる"
   on public.spots for delete
   to authenticated
   using (true);
+
+-- ------------------------------------------------------------
+-- 5. 最後に、正しく作れたかを確認する
+--
+--    実行後に「結果の表」が1行表示されれば成功です。
+--    もし "Success. No rows returned"（結果の表が出ない）だった場合は、
+--    SQLが全部コメント扱いになっています（＝実際には何も作られていません）。
+-- ------------------------------------------------------------
+select
+  '完了: spots 表を作成しました' as result,
+  (select count(*) from public.spots) as 登録件数,
+  (select count(*) from pg_policies where schemaname = 'public' and tablename = 'spots') as rlsポリシー数,
+  (select relrowsecurity from pg_class where oid = 'public.spots'::regclass) as rls有効;
