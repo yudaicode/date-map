@@ -42,3 +42,6 @@ next-env.d.ts
 
 # 秘密情報は含まない「見本」ファイルだけはGitに含める
 !.env.example
+
+# scripts/copy-maplibre-worker.mjs が自動生成するためGit管理不要
+/public/maplibre/

@@ -5,7 +5,14 @@
 import { useEffect, useRef } from 'react'
 // MapLibre v6 は「名前付きエクスポート」のみです。
 // （ネット上の古い記事にある import maplibregl from 'maplibre-gl' は v6 では動きません）
-import { MapLibreMap, Marker, NavigationControl, Popup } from 'maplibre-gl'
+import {
+  getVersion,
+  MapLibreMap,
+  Marker,
+  NavigationControl,
+  Popup,
+  setWorkerUrl,
+} from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css' // 地図の操作ボタンなどの見た目用CSS
 
 import type { Spot } from '@/types/spot'
@@ -16,6 +23,7 @@ import { timeOfDayLabel } from '@/constants/timeOfDay'
 import {
   MAP_ATTRIBUTION,
   MAP_STYLE_URL,
+  MAPLIBRE_WORKER_PATH,
   MIN_ZOOM,
   DEFAULT_ZOOM,
   TOKYO_23KU_BOUNDS,
@@ -79,6 +87,33 @@ function popupHtml(spot: Spot): string {
   `
 }
 
+/**
+ * 地図上の地名を日本語優先で表示する。
+ *
+ * OpenFreeMap の標準スタイルは地名を英語混じりで出すため（例: Tokyo / Koto）、
+ * 日本語名 name:ja があればそれを使うように、文字表示の設定を上書きする。
+ * coalesce は「左から順に見て、最初に中身があるものを使う」という意味。
+ */
+function applyJapaneseLabels(map: MapLibreMap) {
+  const layers = map.getStyle().layers ?? []
+
+  for (const layer of layers) {
+    if (layer.type !== 'symbol') continue
+
+    const textField = map.getLayoutProperty(layer.id, 'text-field')
+    // 国道番号などの「地名ではない文字」を消さないよう、
+    // 地名(name)を使っているレイヤーだけを対象にする
+    if (!textField || !JSON.stringify(textField).includes('name')) continue
+
+    map.setLayoutProperty(layer.id, 'text-field', [
+      'coalesce',
+      ['get', 'name:ja'],
+      ['get', 'name:latin'],
+      ['get', 'name'],
+    ])
+  }
+}
+
 export default function MapView({ spots }: Props) {
   // useRef は「画面のこの場所」を覚えておくための箱。
   // 地図はこの div の中に描かれます。
@@ -89,6 +124,12 @@ export default function MapView({ spots }: Props) {
   useEffect(() => {
     if (!containerRef.current) return
     if (mapRef.current) return // すでに作ってあるなら何もしない
+
+    // 地図データを裏で処理する「ワーカー」の場所を明示的に指定する。
+    // MapLibre v6 は本来この場所を自分で推測するが、Next.js がファイルをまとめると
+    // 推測が外れて空になり、ブラウザに "Worker failed to load" というエラーが出る。
+    // ?v=... はライブラリを更新したときに、古いワーカーが使われ続けるのを防ぐための印。
+    setWorkerUrl(`${MAPLIBRE_WORKER_PATH}?v=${getVersion()}`)
 
     const map = new MapLibreMap({
       container: containerRef.current,
@@ -101,6 +142,10 @@ export default function MapView({ spots }: Props) {
     })
 
     map.addControl(new NavigationControl(), 'top-right') // 拡大・縮小ボタン
+
+    // スタイル（地図の見た目データ）の読み込みが終わってから日本語化する。
+    // 読み込み前に実行しても、まだレイヤーが存在しないため効果がない。
+    map.on('load', () => applyJapaneseLabels(map))
     mapRef.current = map
 
     // 画面から消えるときに地図を片付ける（放置するとメモリを使い続けるため）

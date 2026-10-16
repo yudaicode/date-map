@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // ここから追加:
+    // public/ は配信するだけのファイル置き場。
+    // とくに public/maplibre/ は MapLibre から自動コピーした巨大ファイルなので、
+    // 書き方チェックの対象から外す（自分で書いたコードではないため）。
+    "public/**",
   ]),
 ]);
 

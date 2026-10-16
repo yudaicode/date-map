@@ -20,8 +20,10 @@ export default function Home() {
       <main className="relative flex-1">
         <MapViewClient spots={spots} />
 
-        {/* ジャンルの色の凡例。地図の上に重ねて表示している */}
-        <div className="pointer-events-none absolute bottom-8 left-3 z-10 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 shadow-sm">
+        {/* ジャンルの色の凡例。地図の上に重ねて表示している。
+            左上に置く理由: 右上は拡大縮小ボタン、右下は出典表示、
+            左下は開発中だけ出る Next.js のボタンと重なるため */}
+        <div className="pointer-events-none absolute top-3 left-3 z-10 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 shadow-sm">
           <p className="mb-1.5 text-[10px] font-semibold tracking-wide text-slate-500">
             ジャンル
           </p>

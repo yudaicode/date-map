@@ -23,3 +23,7 @@ export const MIN_ZOOM = 9
 // OpenStreetMap のデータを使う場合、出典の表示が必須です（ライセンス条件）。
 export const MAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors | <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a>'
+
+// MapLibre のワーカー（地図データを裏で処理する別スレッド）の置き場所。
+// scripts/copy-maplibre-worker.mjs が public/maplibre/ に自動コピーしている。
+export const MAPLIBRE_WORKER_PATH = '/maplibre/maplibre-gl-worker.js'

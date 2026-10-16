@@ -24,6 +24,19 @@ SNS（Instagram / TikTok）で見つけた**東京23区のデートスポット*
 - **MapLibre v6 には default export が無い。** `import maplibregl from 'maplibre-gl'` は動かない。
   正: `import { MapLibreMap, Marker, Popup, NavigationControl } from 'maplibre-gl'`
   （`Map` は JavaScript 標準の `Map` と名前が衝突するため、別名の `MapLibreMap` を使う）
+- **MapLibre v6 のワーカーは Next.js 上では自動で読み込めない。**
+  v6 は `import.meta.url` からワーカーの場所を逆算するが、Next.js がバンドルすると
+  この値が http(s) URL でなくなり、空文字が返って
+  `Worker failed to load. Check that the worker URL is correct.` となる。
+  対処: `scripts/copy-maplibre-worker.mjs` で `maplibre-gl-worker.mjs` を
+  `public/maplibre/maplibre-gl-worker.js` にコピーし、`setWorkerUrl()` で明示指定する。
+  コピーは postinstall / predev / prebuild で自動実行。**この仕組みを外すと地図が壊れる。**
+  （`.mjs` ではなく `.js` でコピーするのは、JavaScript の MIME タイプで確実に配信するため）
+- 地図のラベルは `applyJapaneseLabels()` で日本語優先に上書きしている。
+  OpenFreeMap 標準スタイルは英語混じりのため。国道番号など `name` 以外を使う
+  レイヤーは除外している（除外しないと番号が消える）。
+- `public/**` は eslint の対象外にしている。自動コピーした巨大ファイルが
+  大量の警告を出すため。
 - 地図は**ブラウザ側専用**。`next/dynamic` の `ssr: false` で読み込む。
   この指定は `'use client'` ファイル内にしか書けないので `MapViewClient.tsx` に分離している。
 - `Spot` 型のプロパティ名は **snake_case**。Supabase の列名と完全一致させ、詰め替え処理を不要にする狙い。
@@ -92,7 +105,14 @@ src/
 - 地図を表示し、ジャンル別に色分けしたピンを設置。クリックで吹き出し表示
 - 23区の外へスクロールしすぎないよう `maxBounds` を設定
 - OpenStreetMap の出典表示（ライセンス条件）を地図右下に表示
-- 検証: `npx tsc --noEmit` / `npm run build` / dev サーバーのHTML・CSS内容チェック すべて通過
+- 地図のラベルを日本語優先に上書き（`applyJapaneseLabels`）
+- ジャンル凡例を地図の左上に配置（右上=ズーム、右下=出典、左下=開発ツールを避けるため）
+- **不具合修正**: ブラウザに `Worker failed to load` が出て地図が描画されない問題を解消
+  （原因と対処は上記「実装上の重要な注意点」を参照）
+- 検証: `npx tsc --noEmit` / `npm run lint` / `npm run build` に加え、
+  **ヘッドレスChromeによる実ブラウザ検証**を実施。
+  結果: JSエラー0 / 通信失敗0 / ピン10個 / 吹き出し表示OK /
+  OpenFreeMap へのタイル要求14件すべて200（＝ワーカー稼働の確証）
 
 ### Phase 1 の既知の留保事項
 - `npm audit` が `braces` 由来の high 5件を報告する。これは `eslint-config-next` の
@@ -111,6 +131,19 @@ npm run build   # 本番ビルド（公開前の確認。これが通らない�
 npm run lint    # 書き方のチェック
 npx tsc --noEmit # 型（打ち間違い）のチェック
 ```
+
+## ブラウザでの自動検証（各フェーズで実施する）
+
+コンソールエラーや描画崩れは `tsc` / `build` では検出できない。
+ローカルにインストール済みの Chrome を headless で動かして確認する。
+（検証用スクリプトはプロジェクト外の一時フォルダに置き、本体には含めない）
+
+確認する項目:
+- `pageerror` / `console.error` が0件か
+- 失敗した通信（`requestfailed` / ステータス400以上）が0件か
+- `.maplibregl-marker` の数が想定どおりか
+- タイル(`.pbf`)の取得が成功しているか ← ワーカーが生きている証拠
+- スクリーンショットを実際に目で見る
 
 ## 進め方のルール
 
