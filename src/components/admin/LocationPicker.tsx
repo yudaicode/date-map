@@ -1,15 +1,10 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { getVersion, MapLibreMap, Marker, NavigationControl, setWorkerUrl } from 'maplibre-gl'
+import { type MapLibreMap, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-import {
-  MAP_ATTRIBUTION,
-  MAP_STYLE_URL,
-  MAPLIBRE_WORKER_PATH,
-  TOKYO_23KU_BOUNDS,
-} from '@/lib/map/config'
+import { createBaseMap } from '@/components/map/mapParts'
 
 type Props = {
   lat: number
@@ -40,17 +35,7 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
 
-    setWorkerUrl(`${MAPLIBRE_WORKER_PATH}?v=${getVersion()}`)
-
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: MAP_STYLE_URL,
-      center: [lng, lat],
-      zoom: 16,
-      maxBounds: TOKYO_23KU_BOUNDS,
-      attributionControl: { customAttribution: MAP_ATTRIBUTION },
-    })
-    map.addControl(new NavigationControl(), 'top-right')
+    const map = createBaseMap(containerRef.current, { center: [lng, lat], zoom: 16 })
 
     // draggable: true でピンをつまんで動かせるようになる
     const marker = new Marker({ draggable: true, color: '#e11d48' })

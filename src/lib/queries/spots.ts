@@ -38,8 +38,15 @@ export async function fetchAllSpots(): Promise<Spot[]> {
   return (data ?? []) as Spot[]
 }
 
+// id の形（UUID = 8-4-4-4-12桁の英数字）。例: ff6963b4-b004-40fc-817b-c31c0a288d6e
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /** 1件だけ取得。見つからなければ null */
 export async function fetchSpot(id: string): Promise<Spot | null> {
+  // 形が違う id をそのままDBに送ると、英語のエラーが返ってくる。
+  // 打ち間違いのURLなどは「見つからない」として扱う
+  if (!UUID_PATTERN.test(id)) return null
+
   const { data, error } = await getSupabase()
     .from(TABLE)
     .select('*')

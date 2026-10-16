@@ -82,7 +82,8 @@ SNS（Instagram / TikTok）で見つけた**東京23区のデートスポット*
 src/
 ├── app/                              URL = フォルダ名 でページが決まる
 │   ├── layout.tsx                        全ページ共通の外枠
-│   ├── page.tsx                          「/」= 地図画面（SpotsScreen を呼ぶだけ）
+│   ├── page.tsx                          「/」= 地図画面（Suspense で SpotsScreen を包むだけ）
+│   ├── spots/[id]/page.tsx               スポット詳細（Suspense で SpotDetailScreen を包むだけ）
 │   ├── globals.css
 │   ├── api/geocode/route.ts              国土地理院APIへの中継
 │   └── admin/                            管理画面
@@ -93,8 +94,15 @@ src/
 │           ├── page.tsx                          /admin（一覧）
 │           └── spots/new, spots/[id]              登録・編集
 ├── components/
-│   ├── map/MapView.tsx + MapViewClient.tsx   地図本体 / ssr:false ラッパー
-│   ├── spot/SpotsScreen.tsx                  トップ画面の中身（取得・表示）
+│   ├── map/
+│   │   ├── mapParts.ts                           地図の共通部品（作成・日本語化・ピン）
+│   │   ├── MapView(+Client).tsx                  トップの地図 / ssr:false ラッパー
+│   │   └── SpotLocationMap(+Client).tsx          詳細画面の小さな地図
+│   ├── spot/
+│   │   ├── SpotsScreen.tsx                       トップ画面の中身（取得・絞り込み・表示）
+│   │   ├── FilterPanel.tsx                       絞り込みパネル
+│   │   ├── SpotDetailScreen.tsx                  詳細画面の中身
+│   │   └── mapQueryMemory.ts                     「地図に戻る」用に絞り込み条件を一時保存
 │   ├── admin/                                管理画面の部品（すべて client）
 │   │   ├── AdminGuard.tsx                        ログイン確認（UIのみ。防御はRLS）
 │   │   ├── AdminSpotList.tsx                     一覧
@@ -109,6 +117,7 @@ src/
     ├── map/config.ts                     地図の設定（配信元URL・中心座標・表示範囲）
     ├── supabase/client.ts, auth.ts       DB接続 / ログイン
     ├── queries/spots.ts                  取得・登録・更新・削除（iOS版と共有する中心）
+    ├── filters/spotFilter.ts             絞り込みのルールとURLとの変換（iOS版と共有する中心）
     └── geocode.ts                        住所→緯度経度（/api/geocode を呼ぶ）
 
 supabase/
@@ -139,7 +148,7 @@ scripts/
 |---|---|---|
 | 1 | 開発環境の準備＋地図にダミースポット10件を表示 | **完了** |
 | 2 | Supabase接続・テーブル作成・管理画面（住所→緯度経度の自動取得） | **完了** |
-| 3 | フィルタ（区／ジャンル／予算／時間帯）とスポット詳細画面 | 未着手 |
+| 3 | フィルタ（区／ジャンル／予算／時間帯）とスポット詳細画面 | **完了** |
 | 4 | スマホ表示の調整と Vercel への公開 | 未着手 |
 | 5 | iOSアプリ化（Expo / React Native） | 後日 |
 
@@ -182,7 +191,6 @@ scripts/
   （URL形式／キー／表の存在／**ログインなしの書き込みが拒否されるか**まで確認する）
 - 検証: tsc / lint / build に加え、ヘッドレスChromeで4ページを確認し**エラー0件**。
   `/api/geocode` は 正常系 / 住所なし(404) / 23区外(422) / 空文字(400) の4パターンを確認
-
 - オーナーのSupabase設定完了（2026-10-17）: check:supabase 全項目OK / 管理画面ログイン確認済み
   - キーは新形式の `sb_publishable_...`。`.env.local` では変数名を `NEXT_PUBLIC_SUPABASE_ANON_KEY` のまま使う
   - Supabase の画面では Project URL は「Connect」ボタン、または Project Settings → Data API にある
@@ -193,6 +201,34 @@ scripts/
   個人を特定していない。**Supabase側で一般ユーザーの新規登録を必ず無効にしておくこと。**
   将来、複数人で運用するなら `admins` 表を作ってRLSを `auth.uid()` で絞る必要がある。
 - `select('*')` を使っているため、将来列を追加したら `Spot` 型と `toInput()` の更新が必要。
+
+### Phase 3 でやったこと
+- 絞り込み: ジャンル / 区 / 予算 / 時間帯。ルールは `src/lib/filters/spotFilter.ts` に集約
+  - 同じ項目内は「どれか」（OR）、項目どうしは「すべて」（AND）、未選択の項目は絞り込まない
+  - 時間帯は「昼」「夜」の2択。`both`（昼・夜どちらも）のスポットはどちらを選んでも出る
+  - 区のボタンは、スポットが1件以上ある区だけを並べる
+- **絞り込み条件は URL に入れる**（例: `/?genre=cafe&ward=shibuya`）。条件の保管場所は URL だけ。
+  更新は `window.history.replaceState`（Next.js が検知して `useSearchParams` が更新される）。
+  知らない値は読み飛ばす。共有したURLでも同じ結果になる
+- `useSearchParams` / `useParams` は cacheComponents 下では **Suspense で囲むのが必須**
+  （囲まないと build が失敗する）。そのため `app/page.tsx` と `app/spots/[id]/page.tsx` で包んでいる
+- 絞り込み中は、残ったピンが全部見える位置へ地図を自動で動かす（`fitToSpots`）
+- ジャンルの凡例は、色付きのジャンルボタンが兼ねるので廃止
+- 画面幅768px以上: パネルを左に常時表示 / それ未満: 「絞り込み」ボタンで地図の上に開閉
+- 詳細画面 `/spots/[id]`: ジャンル・区・メモ・予算・時間帯・住所・小さな地図・
+  Googleマップ / Instagram / TikTok へのリンク。下書きは管理者にだけ「下書き（非公開）」付きで見える
+- 吹き出しに「詳しく見る →」。「地図に戻る」は sessionStorage に覚えた条件付きの地図へ戻る
+- 地図の作成処理を `mapParts.ts` に共通化（管理画面の位置調整の地図も日本語ラベルになった）
+- `fetchSpot` は UUID の形でない id を「見つからない」扱いにする（DBの英語エラーを出さないため）
+- 検証: tsc / lint / build に加え、ヘッドレスChromeで確認。**エラー0件 / 通信失敗0件 / タイル取得OK**。
+  夜景=3件、夜=7件、夜景+昼=0件（「条件に合うスポットがありません」表示）、港区+夜景=1件、
+  詳細へ移動→戻ると条件とピン数が復元、`/spots/abc` は「見つかりません」、スマホ幅でパネル開閉OK
+
+### Phase 3 の既知の留保事項
+- 詳細画面から戻ると、地図の位置（ズーム）は初期状態に戻る（絞り込み条件は戻る）
+- 詳細画面のタイトルはブラウザ側で書き換えているため、SNSでURLを共有したときの
+  プレビューには反映されない（必要なら Phase 4 でサーバー側取得を検討）
+- 管理画面の位置調整の地図は共通化の影響を受けるが、ログインが必要なため自動検証はしていない
 
 ---
 

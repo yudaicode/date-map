@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import type { Spot } from '@/types/spot'
+import type { ComponentProps } from 'react'
 
 /**
  * 地図をブラウザ側だけで読み込むための「包み紙」。
@@ -22,6 +22,6 @@ const MapView = dynamic(() => import('./MapView'), {
   ),
 })
 
-export default function MapViewClient({ spots }: { spots: Spot[] }) {
-  return <MapView spots={spots} />
+export default function MapViewClient(props: ComponentProps<typeof MapView>) {
+  return <MapView {...props} />
 }

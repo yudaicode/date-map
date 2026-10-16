@@ -3,16 +3,7 @@
 //   地図は画面の大きさやマウス操作を使うので、ブラウザ側でしか動かせません。
 
 import { useEffect, useRef } from 'react'
-// MapLibre v6 は「名前付きエクスポート」のみです。
-// （ネット上の古い記事にある import maplibregl from 'maplibre-gl' は v6 では動きません）
-import {
-  getVersion,
-  MapLibreMap,
-  Marker,
-  NavigationControl,
-  Popup,
-  setWorkerUrl,
-} from 'maplibre-gl'
+import { LngLatBounds, type MapLibreMap, Marker, Popup } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css' // 地図の操作ボタンなどの見た目用CSS
 
 import type { Spot } from '@/types/spot'
@@ -20,18 +11,15 @@ import { genre } from '@/constants/genres'
 import { wardLabel } from '@/constants/wards'
 import { budgetLabel } from '@/constants/budgets'
 import { timeOfDayLabel } from '@/constants/timeOfDay'
-import {
-  MAP_ATTRIBUTION,
-  MAP_STYLE_URL,
-  MAPLIBRE_WORKER_PATH,
-  MIN_ZOOM,
-  DEFAULT_ZOOM,
-  TOKYO_23KU_BOUNDS,
-  TOKYO_CENTER,
-} from '@/lib/map/config'
+import { DEFAULT_ZOOM, TOKYO_CENTER } from '@/lib/map/config'
+import { createBaseMap, createPinElement } from './mapParts'
 
 type Props = {
   spots: Spot[]
+  /** true のとき、spots が変わるたびに全部のピンが収まるよう地図を動かす */
+  fitToSpots: boolean
+  /** 吹き出しの「詳しく見る」が押されたときに呼ばれる */
+  onOpenDetail: (spot: Spot) => void
 }
 
 /** 文字列をHTMLに安全に埋め込むための処理（< > などを無害な文字に変換する） */
@@ -43,109 +31,56 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
-/** ピン1個の見た目を作る。ジャンルごとに色と絵文字を変えています */
-function createPinElement(spot: Spot): HTMLElement {
+/** ピンをクリックしたときに出る吹き出しの中身 */
+function createPopupContent(spot: Spot, onOpenDetail: (spot: Spot) => void): HTMLElement {
   const g = genre(spot.genre)
   const el = document.createElement('div')
-  // ここだけ Tailwind ではなく直接スタイル指定にしています。
-  // 理由: このピンは React ではなく JavaScript で直接作る要素なので、
-  //       直接指定のほうが確実に反映されます。
-  el.style.cssText = [
-    'width:34px',
-    'height:34px',
-    'border-radius:9999px',
-    `background:${g?.color ?? '#374151'}`,
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'font-size:16px',
-    'line-height:1',
-    'border:2px solid #ffffff',
-    'box-shadow:0 2px 6px rgba(0,0,0,0.35)',
-    'cursor:pointer',
-  ].join(';')
-  el.textContent = g?.emoji ?? '📍'
-  el.setAttribute('aria-label', spot.name)
-  el.title = spot.name
+  el.style.cssText = 'font-family:inherit;max-width:240px'
+  el.innerHTML = `
+    <div style="font-weight:700;font-size:14px;margin-bottom:4px">${escapeHtml(spot.name)}</div>
+    <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
+      ${escapeHtml(wardLabel(spot.ward))} ・ ${escapeHtml(g?.label ?? spot.genre)}
+    </div>
+    <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
+      ${escapeHtml(budgetLabel(spot.budget_band))} ・ ${escapeHtml(timeOfDayLabel(spot.time_of_day))}
+    </div>
+    <div style="font-size:12px;line-height:1.5">${escapeHtml(spot.memo)}</div>
+  `
+
+  // 「詳しく見る」リンク。普通のクリックは画面遷移を Next.js に任せて速くし、
+  // Ctrl+クリックなど（新しいタブで開く操作）はブラウザ標準の動きのままにする
+  const link = document.createElement('a')
+  link.href = `/spots/${spot.id}`
+  link.textContent = '詳しく見る →'
+  link.style.cssText =
+    'display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:#0f172a;text-decoration:underline'
+  link.addEventListener('click', (event) => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return
+    event.preventDefault()
+    onOpenDetail(spot)
+  })
+  el.appendChild(link)
   return el
 }
 
-/** ピンをクリックしたときに出る吹き出しの中身 */
-function popupHtml(spot: Spot): string {
-  const g = genre(spot.genre)
-  return `
-    <div style="font-family:inherit;max-width:240px">
-      <div style="font-weight:700;font-size:14px;margin-bottom:4px">${escapeHtml(spot.name)}</div>
-      <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
-        ${escapeHtml(wardLabel(spot.ward))} ・ ${escapeHtml(g?.label ?? spot.genre)}
-      </div>
-      <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
-        ${escapeHtml(budgetLabel(spot.budget_band))} ・ ${escapeHtml(timeOfDayLabel(spot.time_of_day))}
-      </div>
-      <div style="font-size:12px;line-height:1.5">${escapeHtml(spot.memo)}</div>
-    </div>
-  `
-}
-
-/**
- * 地図上の地名を日本語優先で表示する。
- *
- * OpenFreeMap の標準スタイルは地名を英語混じりで出すため（例: Tokyo / Koto）、
- * 日本語名 name:ja があればそれを使うように、文字表示の設定を上書きする。
- * coalesce は「左から順に見て、最初に中身があるものを使う」という意味。
- */
-function applyJapaneseLabels(map: MapLibreMap) {
-  const layers = map.getStyle().layers ?? []
-
-  for (const layer of layers) {
-    if (layer.type !== 'symbol') continue
-
-    const textField = map.getLayoutProperty(layer.id, 'text-field')
-    // 国道番号などの「地名ではない文字」を消さないよう、
-    // 地名(name)を使っているレイヤーだけを対象にする
-    if (!textField || !JSON.stringify(textField).includes('name')) continue
-
-    map.setLayoutProperty(layer.id, 'text-field', [
-      'coalesce',
-      ['get', 'name:ja'],
-      ['get', 'name:latin'],
-      ['get', 'name'],
-    ])
-  }
-}
-
-export default function MapView({ spots }: Props) {
+export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
   // useRef は「画面のこの場所」を覚えておくための箱。
   // 地図はこの div の中に描かれます。
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+
+  // 最新の onOpenDetail を覚えておく箱（LocationPicker.tsx と同じ理由）
+  const onOpenDetailRef = useRef(onOpenDetail)
+  useEffect(() => {
+    onOpenDetailRef.current = onOpenDetail
+  }, [onOpenDetail])
 
   // 1つめの useEffect: 画面が表示されたときに地図を1回だけ作る
   useEffect(() => {
     if (!containerRef.current) return
     if (mapRef.current) return // すでに作ってあるなら何もしない
 
-    // 地図データを裏で処理する「ワーカー」の場所を明示的に指定する。
-    // MapLibre v6 は本来この場所を自分で推測するが、Next.js がファイルをまとめると
-    // 推測が外れて空になり、ブラウザに "Worker failed to load" というエラーが出る。
-    // ?v=... はライブラリを更新したときに、古いワーカーが使われ続けるのを防ぐための印。
-    setWorkerUrl(`${MAPLIBRE_WORKER_PATH}?v=${getVersion()}`)
-
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: MAP_STYLE_URL,
-      center: TOKYO_CENTER,
-      zoom: DEFAULT_ZOOM,
-      minZoom: MIN_ZOOM,
-      maxBounds: TOKYO_23KU_BOUNDS, // 23区の外へ行きすぎないようにする
-      attributionControl: { customAttribution: MAP_ATTRIBUTION },
-    })
-
-    map.addControl(new NavigationControl(), 'top-right') // 拡大・縮小ボタン
-
-    // スタイル（地図の見た目データ）の読み込みが終わってから日本語化する。
-    // 読み込み前に実行しても、まだレイヤーが存在しないため効果がない。
-    map.on('load', () => applyJapaneseLabels(map))
+    const map = createBaseMap(containerRef.current, { center: TOKYO_CENTER, zoom: DEFAULT_ZOOM })
     mapRef.current = map
 
     // 画面から消えるときに地図を片付ける（放置するとメモリを使い続けるため）
@@ -155,25 +90,35 @@ export default function MapView({ spots }: Props) {
     }
   }, [])
 
-  // 2つめの useEffect: spots（スポット一覧）が変わるたびにピンを置き直す
-  // Phase 3 でフィルタを付けると、絞り込むたびにここが動いてピンが入れ替わります。
+  // 2つめの useEffect: spots（表示するスポット）が変わるたびにピンを置き直す
+  // フィルタで絞り込むたびにここが動いてピンが入れ替わります。
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
 
     const markers = spots.map((spot) => {
-      const popup = new Popup({ offset: 20, closeButton: true }).setHTML(popupHtml(spot))
+      const popup = new Popup({ offset: 20, closeButton: true }).setDOMContent(
+        createPopupContent(spot, (s) => onOpenDetailRef.current(s))
+      )
       return new Marker({ element: createPinElement(spot) })
         .setLngLat([spot.lng, spot.lat]) // 経度, 緯度 の順番
         .setPopup(popup)
         .addTo(map)
     })
 
+    // 絞り込み中は、残ったピンが全部見える位置まで地図を動かす
+    if (fitToSpots && spots.length > 0) {
+      const bounds = new LngLatBounds()
+      spots.forEach((spot) => bounds.extend([spot.lng, spot.lat]))
+      // maxZoom: ピンが1個だけのときに寄りすぎないための上限
+      map.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 600 })
+    }
+
     // 次にこの処理が動く前に、前回置いたピンを全部消す
     return () => {
       markers.forEach((m) => m.remove())
     }
-  }, [spots])
+  }, [spots, fitToSpots])
 
   return <div ref={containerRef} className="h-full w-full" />
 }
