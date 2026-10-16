@@ -16,8 +16,8 @@ SNS（Instagram / TikTok）で見つけた**東京23区のデートスポット*
 | スタイル | Tailwind CSS v4 | `next.config.ts` の turbopack ルール経由で読み込む（`postcss.config` は無い） |
 | 地図ライブラリ | MapLibre GL JS v6 | オープンソース・無料。配信元を後から差し替えられる |
 | 地図タイル | OpenFreeMap（`tiles.openfreemap.org`） | **APIキー・クレカ登録 不要／無料**。乗り換え先候補は MapTiler（月10万タイル無料） |
-| ジオコーディング | Geolonia 住所ジオコーディング（Phase 2で導入） | 無料・キー不要・日本の住所に強い |
-| DB / 認証 | Supabase（Phase 2で導入） | iOS版（Expo）からも同じDBを使い回せる |
+| ジオコーディング | **国土地理院 住所検索API** | 無料・キー不要・日本の住所に強い。CORS非対応のため `/api/geocode` で中継する |
+| DB / 認証 | Supabase（`@supabase/supabase-js` のみ。`@supabase/ssr` は使わない） | iOS版（Expo）からも同じDBを使い回せる |
 | 公開 | Vercel（Phase 4で導入） | Next.js と相性が良く無料枠で足りる |
 
 ### 実装上の重要な注意点
@@ -41,8 +41,22 @@ SNS（Instagram / TikTok）で見つけた**東京23区のデートスポット*
   この指定は `'use client'` ファイル内にしか書けないので `MapViewClient.tsx` に分離している。
 - `Spot` 型のプロパティ名は **snake_case**。Supabase の列名と完全一致させ、詰め替え処理を不要にする狙い。
 - 座標の順番は MapLibre の仕様で **`[経度, 緯度]`**（lng, lat）。緯度が先ではない。
-- `next.config.ts` で `cacheComponents: true` が有効。Phase 2 で動的データを扱う際は
-  `node_modules/next/dist/docs/01-app/02-guides/migrating-to-cache-components.md` を確認する。
+- `next.config.ts` で `cacheComponents: true` / `partialPrefetching: true` が有効。
+- **データ取得はすべてブラウザ側で行う（`@supabase/ssr` とcookie認証は使わない）。**
+  理由: ①Phase 3 のフィルタはどのみちブラウザ側で動く ②管理画面での変更が再読込で即反映される
+  ③iOS版（Expo）と同じ作りになる ④cacheComponents × cookie認証の複雑さを丸ごと回避できる。
+  公開側は anonキー＋RLS で公開データのみ、管理側は localStorage のセッションで書き込む。
+- **管理画面のページは「薄いサーバー側 page.tsx ＋ client部品」に分ける。**
+  `AdminGuard` がログイン確認中は `children` を描かないため、Next.js 16 の instant-navigation
+  検査が `segment was dropped` エラーを出す。`export const instant = false` で申告するが、
+  **この設定は Client Component には書けない**（書くとエラー）。そのため page.tsx をサーバー側に保ち、
+  中身を `components/admin/` の client 部品へ逃がしている。**この分離を崩すと dev にエラーが復活する。**
+  なお `(protected)/layout.tsx` 側への `instant` 指定は不要（検証で確認済み）。
+- **DBから読んだ行をそのまま保存に使い回さない。** `select('*')` は `created_at` / `updated_at` / `id`
+  も返すため、丸ごと送り返すと更新日時が正しく記録されない。`SpotForm` の `toInput()` で
+  入力項目だけを明示的に選び出している。
+- **Windowsのシェル（curl等）経由で日本語を送ると文字化けする。** 住所検索APIの検証で
+  「結果0件」になるのはこれが原因。検証は必ず Node（`fetch`）から行う。
 - Next.js がこの版の仕様を `node_modules/next/dist/docs/` に同梱している。
   迷ったら記憶に頼らず**必ずそこを読む**。
 
@@ -60,18 +74,44 @@ SNS（Instagram / TikTok）で見つけた**東京23区のデートスポット*
 
 ```
 src/
-├── app/                    URL = フォルダ名 でページが決まる
-│   ├── layout.tsx              全ページ共通の外枠
-│   ├── page.tsx                「/」= 地図画面
-│   └── globals.css
-├── components/map/         地図まわりの部品
-│   ├── MapView.tsx             地図本体（ブラウザ側で動く）
-│   └── MapViewClient.tsx       ssr:false で包むためのラッパー
-├── constants/              選択肢の定義（フィルタUIの元ネタ）
-│   ├── wards.ts / genres.ts / budgets.ts / timeOfDay.ts
-├── types/spot.ts           スポット1件のデータの形（iOS版と共有する中心）
-├── lib/map/config.ts       地図の設定（配信元URL・中心座標・表示範囲）
-└── data/dummySpots.ts      Phase 1 の仮データ。Phase 2 で削除予定
+├── app/                              URL = フォルダ名 でページが決まる
+│   ├── layout.tsx                        全ページ共通の外枠
+│   ├── page.tsx                          「/」= 地図画面（SpotsScreen を呼ぶだけ）
+│   ├── globals.css
+│   ├── api/geocode/route.ts              国土地理院APIへの中継
+│   └── admin/                            管理画面
+│       ├── layout.tsx                        共通ヘッダー
+│       ├── login/page.tsx                    ログイン（門番の外）
+│       └── (protected)/                      カッコ付き = URLに出ない。門番の内側
+│           ├── layout.tsx                        AdminGuard を適用
+│           ├── page.tsx                          /admin（一覧）
+│           └── spots/new, spots/[id]              登録・編集
+├── components/
+│   ├── map/MapView.tsx + MapViewClient.tsx   地図本体 / ssr:false ラッパー
+│   ├── spot/SpotsScreen.tsx                  トップ画面の中身（取得・表示）
+│   ├── admin/                                管理画面の部品（すべて client）
+│   │   ├── AdminGuard.tsx                        ログイン確認（UIのみ。防御はRLS）
+│   │   ├── AdminSpotList.tsx                     一覧
+│   │   ├── EditSpotScreen.tsx                    編集画面
+│   │   ├── SpotForm.tsx                          登録・編集フォーム
+│   │   └── LocationPicker(+Client).tsx           ピンをドラッグして位置調整
+│   └── ui/StatusMessage.tsx                  読み込み中・エラー表示の共通部品
+├── constants/                        選択肢の定義（フィルタUIの元ネタ）
+│   └── wards.ts / genres.ts / budgets.ts / timeOfDay.ts
+├── types/spot.ts                     スポット1件のデータの形（iOS版と共有する中心）
+└── lib/
+    ├── map/config.ts                     地図の設定（配信元URL・中心座標・表示範囲）
+    ├── supabase/client.ts, auth.ts       DB接続 / ログイン
+    ├── queries/spots.ts                  取得・登録・更新・削除（iOS版と共有する中心）
+    └── geocode.ts                        住所→緯度経度（/api/geocode を呼ぶ）
+
+supabase/
+├── migrations/0001_create_spots.sql   表・CHECK制約・索引・トリガー・RLS
+└── seed.sql                          動作確認用の10件
+
+scripts/
+├── copy-maplibre-worker.mjs          地図ワーカーの自動コピー（外すと地図が壊れる）
+└── check-supabase.mjs                npm run check:supabase の中身
 ```
 
 将来の iOS 化に向け、`src/types/` と `src/lib/` に「データの形」と「DB問い合わせ」を集約し、
@@ -92,7 +132,7 @@ src/
 | Phase | 内容 | 状態 |
 |---|---|---|
 | 1 | 開発環境の準備＋地図にダミースポット10件を表示 | **完了** |
-| 2 | Supabase接続・テーブル作成・管理画面（住所→緯度経度の自動取得） | 未着手 |
+| 2 | Supabase接続・テーブル作成・管理画面（住所→緯度経度の自動取得） | **完了**（オーナーのSupabase設定待ち） |
 | 3 | フィルタ（区／ジャンル／予算／時間帯）とスポット詳細画面 | 未着手 |
 | 4 | スマホ表示の調整と Vercel への公開 | 未着手 |
 | 5 | iOSアプリ化（Expo / React Native） | 後日 |
@@ -121,6 +161,28 @@ src/
 - OpenFreeMap は寄付運営のため、本格運用時は MapTiler 等への移行を検討する
   （`src/lib/map/config.ts` の `MAP_STYLE_URL` 1行の差し替えで済む）。
 
+### Phase 2 でやったこと
+- `supabase/migrations/0001_create_spots.sql`: spots表 + CHECK制約 + 索引 + updated_atトリガー + RLS
+  - CHECK制約で区・ジャンル・予算帯・時間帯・座標範囲をDB側でも縛っている（アプリのバグ対策）
+- RLS方針: 一般は `is_published = true` の行を**読むだけ**／ログイン済みは全件の読み書き
+- `src/lib/supabase/client.ts`: anonキーで接続。未設定時は**日本語で対処法を示す例外**を投げる
+- `src/lib/queries/spots.ts`: 取得・登録・更新・削除を集約（iOS版でも使い回す）
+- 認証: **メール＋パスワード**。管理者アカウントは Supabase 管理画面で手動作成し、一般登録は無効化
+  - マジックリンクを選ばなかった理由: Supabase標準SMTPは送信数制限が厳しく、検証が滞るため
+- 管理画面: 一覧 / 新規登録 / 編集・削除 / ログイン・ログアウト
+- 住所→緯度経度: `/api/geocode`（国土地理院）＋ 地図上でピンをドラッグして微調整
+- トップページを Supabase 読み込みに変更し、`src/data/dummySpots.ts` を削除（内容は `seed.sql` へ）
+- `npm run check:supabase`: 設定ミスの切り分け用チェック
+  （URL形式／キー／表の存在／**ログインなしの書き込みが拒否されるか**まで確認する）
+- 検証: tsc / lint / build に加え、ヘッドレスChromeで4ページを確認し**エラー0件**。
+  `/api/geocode` は 正常系 / 住所なし(404) / 23区外(422) / 空文字(400) の4パターンを確認
+
+### Phase 2 の既知の留保事項
+- 管理者アカウントは1つだけ作る前提。RLSは「ログイン済みなら書き込み可」であり、
+  個人を特定していない。**Supabase側で一般ユーザーの新規登録を必ず無効にしておくこと。**
+  将来、複数人で運用するなら `admins` 表を作ってRLSを `auth.uid()` で絞る必要がある。
+- `select('*')` を使っているため、将来列を追加したら `Spot` 型と `toInput()` の更新が必要。
+
 ---
 
 ## 開発コマンド
@@ -130,6 +192,8 @@ npm run dev     # 開発サーバー起動 → http://localhost:3000
 npm run build   # 本番ビルド（公開前の確認。これが通らないとVercelでも失敗する）
 npm run lint    # 書き方のチェック
 npx tsc --noEmit # 型（打ち間違い）のチェック
+
+npm run check:supabase  # Supabaseの設定が正しいか確認（つまずいたら最初にこれ）
 ```
 
 ## ブラウザでの自動検証（各フェーズで実施する）
