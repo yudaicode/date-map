@@ -1,6 +1,7 @@
 import { WARDS, type WardId } from '@/constants/wards'
 import { GENRES, type GenreId } from '@/constants/genres'
 import { BUDGET_BANDS, type BudgetBandId } from '@/constants/budgets'
+import { SCENES, type SceneId } from '@/constants/scenes'
 import type { Spot } from '@/types/spot'
 
 /**
@@ -10,6 +11,8 @@ import type { Spot } from '@/types/spot'
  * - 同じ項目の中で複数選ぶと「どれか1つに当てはまればOK」（例: 渋谷区 または 港区）
  * - 違う項目どうしは「全部に当てはまる必要がある」（例: 渋谷区 かつ カフェ）
  * - 何も選んでいない項目は「絞り込まない」
+ * - シーンだけは例外で「選んだもの全部に当てはまる」（例: 雨の日OK かつ 初デート）。
+ *   シーンは条件を足すほど絞りたい性質のため（雨の日を選んで晴れの日向きが出ては困る）
  *
  * 画面（React）に依存しない書き方にしてあるので、iOS版でもそのまま使い回せます。
  */
@@ -23,17 +26,25 @@ export const TIME_FILTER_OPTIONS = [
 export type TimeFilterId = (typeof TIME_FILTER_OPTIONS)[number]['id']
 
 export type SpotFilter = {
+  scenes: SceneId[]
   wards: WardId[]
   genres: GenreId[]
   budgets: BudgetBandId[]
   times: TimeFilterId[]
 }
 
-export const EMPTY_FILTER: SpotFilter = { wards: [], genres: [], budgets: [], times: [] }
+export const EMPTY_FILTER: SpotFilter = {
+  scenes: [],
+  wards: [],
+  genres: [],
+  budgets: [],
+  times: [],
+}
 
 export function filterSpots(spots: Spot[], filter: SpotFilter): Spot[] {
   return spots.filter(
     (spot) =>
+      filter.scenes.every((scene) => spot.scenes.includes(scene)) &&
       (filter.wards.length === 0 || filter.wards.includes(spot.ward)) &&
       (filter.genres.length === 0 || filter.genres.includes(spot.genre)) &&
       (filter.budgets.length === 0 || filter.budgets.includes(spot.budget_band)) &&
@@ -45,7 +56,13 @@ export function filterSpots(spots: Spot[], filter: SpotFilter): Spot[] {
 
 /** 選んでいる条件の数（「絞り込み (3)」のような表示に使う） */
 export function countActiveFilters(filter: SpotFilter): number {
-  return filter.wards.length + filter.genres.length + filter.budgets.length + filter.times.length
+  return (
+    filter.scenes.length +
+    filter.wards.length +
+    filter.genres.length +
+    filter.budgets.length +
+    filter.times.length
+  )
 }
 
 /** 一覧に value があれば外し、無ければ足す（ボタンのオン・オフ切り替え用） */
@@ -68,6 +85,7 @@ function pick<T extends string>(raw: string | null, allowed: readonly { id: T }[
 
 export function filterFromSearchParams(params: URLSearchParams): SpotFilter {
   return {
+    scenes: pick(params.get('scene'), SCENES),
     wards: pick(params.get('ward'), WARDS),
     genres: pick(params.get('genre'), GENRES),
     budgets: pick(params.get('budget'), BUDGET_BANDS),
@@ -78,6 +96,7 @@ export function filterFromSearchParams(params: URLSearchParams): SpotFilter {
 /** 条件を URL の ? 以降の文字列にする。条件が無ければ空文字 */
 export function filterToQueryString(filter: SpotFilter): string {
   const params = new URLSearchParams()
+  if (filter.scenes.length) params.set('scene', filter.scenes.join(','))
   if (filter.wards.length) params.set('ward', filter.wards.join(','))
   if (filter.genres.length) params.set('genre', filter.genres.join(','))
   if (filter.budgets.length) params.set('budget', filter.budgets.join(','))

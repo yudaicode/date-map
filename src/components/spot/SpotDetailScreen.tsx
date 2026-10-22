@@ -13,6 +13,7 @@ import { genre } from '@/constants/genres'
 import { wardLabel } from '@/constants/wards'
 import { budgetLabel } from '@/constants/budgets'
 import { timeOfDayLabel } from '@/constants/timeOfDay'
+import { sceneLabel } from '@/constants/scenes'
 import { snsEmbedUrl } from '@/lib/sns'
 import type { Spot } from '@/types/spot'
 
@@ -138,6 +139,18 @@ export default function SpotDetailScreen() {
                 )}
               </div>
               <h1 className="mt-3 text-xl font-bold tracking-tight">{spot.name}</h1>
+              {spot.scenes.length > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {spot.scenes.map((scene) => (
+                    <li
+                      key={scene}
+                      className="rounded-full border border-slate-300 bg-white px-2.5 py-0.5 text-xs text-slate-700"
+                    >
+                      #{sceneLabel(scene)}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {spot.memo && (

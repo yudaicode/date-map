@@ -15,6 +15,15 @@ export type SpotInput = Omit<Spot, 'id'>
 
 const TABLE = 'spots'
 
+/**
+ * DBから読んだ1行を、アプリで扱う形に整える。
+ * scenes 列は後から追加したので、追加前のDB（SQL未実行）では存在しない。
+ * その場合でも画面が壊れないよう、空の一覧 [] を補う。
+ */
+function normalize(row: Spot): Spot {
+  return { ...row, scenes: row.scenes ?? [] }
+}
+
 /** 一般公開用: 公開済みのスポットだけを取得 */
 export async function fetchPublishedSpots(): Promise<Spot[]> {
   const { data, error } = await getSupabase()
@@ -24,7 +33,7 @@ export async function fetchPublishedSpots(): Promise<Spot[]> {
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`スポットの取得に失敗しました: ${error.message}`)
-  return (data ?? []) as Spot[]
+  return ((data ?? []) as Spot[]).map(normalize)
 }
 
 /** 管理用: 下書きも含めて全件取得（ログインしていないとRLSにより0件になる） */
@@ -35,7 +44,7 @@ export async function fetchAllSpots(): Promise<Spot[]> {
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`スポットの取得に失敗しました: ${error.message}`)
-  return (data ?? []) as Spot[]
+  return ((data ?? []) as Spot[]).map(normalize)
 }
 
 // id の形（UUID = 8-4-4-4-12桁の英数字）。例: ff6963b4-b004-40fc-817b-c31c0a288d6e
@@ -54,7 +63,7 @@ export async function fetchSpot(id: string): Promise<Spot | null> {
     .maybeSingle() // 0件でもエラーにしない
 
   if (error) throw new Error(`スポットの取得に失敗しました: ${error.message}`)
-  return (data as Spot) ?? null
+  return data ? normalize(data as Spot) : null
 }
 
 /** 新規登録 */
@@ -67,6 +76,14 @@ export async function createSpot(input: SpotInput): Promise<Spot> {
 
   if (error) throw new Error(`登録に失敗しました: ${error.message}`)
   return data as Spot
+}
+
+/** 一括登録（まとめて1回の通信で保存する。1件でも不正なら全件保存されない） */
+export async function createSpots(inputs: SpotInput[]): Promise<number> {
+  const { data, error } = await getSupabase().from(TABLE).insert(inputs).select('id')
+
+  if (error) throw new Error(`一括登録に失敗しました: ${error.message}`)
+  return data?.length ?? 0
 }
 
 /** 編集 */

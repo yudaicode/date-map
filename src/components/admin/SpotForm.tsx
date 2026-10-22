@@ -10,6 +10,8 @@ import { WARDS } from '@/constants/wards'
 import { GENRES } from '@/constants/genres'
 import { BUDGET_BANDS } from '@/constants/budgets'
 import { TIME_OF_DAY } from '@/constants/timeOfDay'
+import { SCENES } from '@/constants/scenes'
+import { toggleValue } from '@/lib/filters/spotFilter'
 import { geocodeAddress, searchPlaces, wardFromAddress, type PlaceCandidate } from '@/lib/geocode'
 import { extractUrl, fetchSnsInfo, type SnsInfo } from '@/lib/sns'
 import { createSpot, deleteSpot, updateSpot, type SpotInput } from '@/lib/queries/spots'
@@ -24,6 +26,7 @@ const EMPTY: SpotInput = {
   genre: 'cafe',
   budget_band: 'b1000_3000',
   time_of_day: 'both',
+  scenes: [],
   memo: '',
   lat: TOKYO_CENTER[1],
   lng: TOKYO_CENTER[0],
@@ -50,6 +53,7 @@ function toInput(spot: Spot): SpotInput {
     genre: spot.genre,
     budget_band: spot.budget_band,
     time_of_day: spot.time_of_day,
+    scenes: spot.scenes,
     memo: spot.memo,
     lat: spot.lat,
     lng: spot.lng,
@@ -475,6 +479,31 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
           </select>
         </div>
       </div>
+
+      {/* シーン（タグ）。当てはまるものをいくつでも */}
+      <fieldset>
+        <legend className={labelClass}>シーン（当てはまるものをすべて）</legend>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {SCENES.map((scene) => {
+            const selected = form.scenes.includes(scene.id)
+            return (
+              <button
+                key={scene.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => update('scenes', toggleValue(form.scenes, scene.id))}
+                className={`rounded-full border px-3.5 py-2 text-[13px] transition-colors sm:py-1.5 sm:text-xs ${
+                  selected
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-slate-300 bg-white text-slate-700 hover:border-slate-500'
+                }`}
+              >
+                {scene.label}
+              </button>
+            )
+          })}
+        </div>
+      </fieldset>
 
       <div>
         <label className={labelClass} htmlFor="memo">

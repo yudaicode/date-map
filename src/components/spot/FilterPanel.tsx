@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { WARDS, type WardId } from '@/constants/wards'
 import { GENRES } from '@/constants/genres'
 import { BUDGET_BANDS } from '@/constants/budgets'
+import { SCENES } from '@/constants/scenes'
 import {
   countActiveFilters,
   EMPTY_FILTER,
@@ -74,6 +75,22 @@ export default function FilterPanel({ filter, onChange, availableWards }: Props)
 
   return (
     <div className="flex flex-col gap-5">
+      {/* シーンを先頭に置くのは、Z世代が「どんなデートか」から探すことが多いため */}
+      <Section title="シーン">
+        {SCENES.map((s) => (
+          <Chip
+            key={s.id}
+            selected={filter.scenes.includes(s.id)}
+            onClick={() => onChange({ ...filter, scenes: toggleValue(filter.scenes, s.id) })}
+          >
+            {s.label}
+          </Chip>
+        ))}
+      </Section>
+      <p className="-mt-3 text-[11px] text-slate-400">
+        シーンは、選んだものすべてに当てはまるスポットを表示します
+      </p>
+
       <Section title="ジャンル">
         {GENRES.map((g) => (
           <Chip

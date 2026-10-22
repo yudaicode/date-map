@@ -2,6 +2,7 @@ import type { WardId } from '@/constants/wards'
 import type { GenreId } from '@/constants/genres'
 import type { BudgetBandId } from '@/constants/budgets'
 import type { TimeOfDayId } from '@/constants/timeOfDay'
+import type { SceneId } from '@/constants/scenes'
 
 /**
  * スポット1件のデータの形。
@@ -20,6 +21,7 @@ export type Spot = {
   genre: GenreId
   budget_band: BudgetBandId
   time_of_day: TimeOfDayId
+  scenes: SceneId[] // シーン（タグ）。複数付けられる。無ければ空の一覧 []
   memo: string
   lat: number // 緯度（南北。東京は 35.6 くらい）
   lng: number // 経度（東西。東京は 139.7 くらい）

@@ -11,6 +11,7 @@ import { genre } from '@/constants/genres'
 import { wardLabel } from '@/constants/wards'
 import { budgetLabel } from '@/constants/budgets'
 import { timeOfDayLabel } from '@/constants/timeOfDay'
+import { sceneLabel } from '@/constants/scenes'
 import { DEFAULT_ZOOM, TOKYO_CENTER } from '@/lib/map/config'
 import { createBaseMap, createPinElement } from './mapParts'
 
@@ -44,6 +45,13 @@ function createPopupContent(spot: Spot, onOpenDetail: (spot: Spot) => void): HTM
     <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
       ${escapeHtml(budgetLabel(spot.budget_band))} ・ ${escapeHtml(timeOfDayLabel(spot.time_of_day))}
     </div>
+    ${
+      spot.scenes.length > 0
+        ? `<div style="font-size:11px;color:#334155;margin-bottom:6px">${spot.scenes
+            .map((s) => `#${escapeHtml(sceneLabel(s))}`)
+            .join(' ')}</div>`
+        : ''
+    }
     <div style="font-size:12px;line-height:1.5">${escapeHtml(spot.memo)}</div>
   `
 
