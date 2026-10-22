@@ -14,7 +14,8 @@
     "check:supabase": "node scripts/check-supabase.mjs",
     "sql:schema": "powershell -NoProfile -Command \"Get-Content -Raw -Encoding UTF8 supabase/migrations/0001_create_spots.sql | Set-Clipboard; Write-Host 'STEP2のSQL（表の作成）をクリップボードにコピーしました。Supabase の SQL Editor に Ctrl+V で貼り付けて Run してください。'\"",
     "sql:seed": "powershell -NoProfile -Command \"Get-Content -Raw -Encoding UTF8 supabase/seed.sql | Set-Clipboard; Write-Host 'STEP3のSQL（確認用10件）をクリップボードにコピーしました。Supabase の SQL Editor に Ctrl+V で貼り付けて Run してください。'\"",
-    "sql:scenes": "powershell -NoProfile -Command \"Get-Content -Raw -Encoding UTF8 supabase/migrations/0002_add_scenes.sql | Set-Clipboard; Write-Host 'シーン（タグ）追加のSQLをクリップボードにコピーしました。Supabase の SQL Editor に Ctrl+V で貼り付けて Run してください。'\""
+    "sql:scenes": "powershell -NoProfile -Command \"Get-Content -Raw -Encoding UTF8 supabase/migrations/0002_add_scenes.sql | Set-Clipboard; Write-Host 'シーン（タグ）追加のSQLをクリップボードにコピーしました。Supabase の SQL Editor に Ctrl+V で貼り付けて Run してください。'\"",
+    "sql:images": "powershell -NoProfile -Command \"Get-Content -Raw -Encoding UTF8 supabase/migrations/0003_add_images.sql | Set-Clipboard; Write-Host '写真（サムネイル）追加のSQLをクリップボードにコピーしました。Supabase の SQL Editor に Ctrl+V で貼り付けて Run してください。'\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

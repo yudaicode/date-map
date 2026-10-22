@@ -15,6 +15,7 @@ import { toggleValue } from '@/lib/filters/spotFilter'
 import { geocodeAddress, searchPlaces, wardFromAddress, type PlaceCandidate } from '@/lib/geocode'
 import { extractUrl, fetchSnsInfo, type SnsInfo } from '@/lib/sns'
 import { createSpot, deleteSpot, updateSpot, type SpotInput } from '@/lib/queries/spots'
+import { uploadSpotImage } from '@/lib/storage/spotImages'
 import { TOKYO_CENTER } from '@/lib/map/config'
 import type { Spot } from '@/types/spot'
 
@@ -32,6 +33,7 @@ const EMPTY: SpotInput = {
   lng: TOKYO_CENTER[0],
   instagram_url: null,
   tiktok_url: null,
+  image_url: null,
   is_published: true,
 }
 
@@ -59,6 +61,7 @@ function toInput(spot: Spot): SpotInput {
     lng: spot.lng,
     instagram_url: spot.instagram_url,
     tiktok_url: spot.tiktok_url,
+    image_url: spot.image_url,
     is_published: spot.is_published,
   }
 }
@@ -104,6 +107,7 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
 
   const [places, setPlaces] = useState<PlaceCandidate[] | null>(null) // null = まだ検索していない
   const [placeSearching, setPlaceSearching] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   /** 入力欄1つ分の値を書き換えるための小さな関数 */
   function update<K extends keyof SpotInput>(key: K, value: SpotInput[K]) {
@@ -181,6 +185,22 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
     setNotice(
       `「${place.name}」の位置を設定しました。住所は番地まで入らないことが多いので、必要なら書き足してください。下の地図でピンの位置も確認してください。`
     )
+  }
+
+  /** 写真を選んだら、縮小してすぐアップロードする（保存ボタンで保存されるのはURLだけ） */
+  async function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = '' // 同じ写真を選び直しても反応するように空にしておく
+    if (!file) return
+    setError('')
+    setUploading(true)
+    try {
+      update('image_url', await uploadSpotImage(file))
+    } catch (e) {
+      showError(e)
+    } finally {
+      setUploading(false)
+    }
   }
 
   /** 住所 → 緯度経度 */
@@ -547,6 +567,52 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
         </div>
       </div>
 
+      {/* 写真（地図をズームしたときのサムネイル・スワイプのカードに使う） */}
+      <div>
+        <p className={labelClass}>写真（サムネイル）</p>
+        <p className="mt-0.5 text-[11px] text-slate-500">
+          自分で撮った写真か、掲載の許可をもらった写真だけを使ってください（SNS投稿のスクショは不可）。
+          写真が無いスポットは、ジャンルの色と絵文字のカードで表示されます。
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          {form.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- アップロード時に縮小済みのため next/image の変換は不要
+            <img
+              src={form.image_url}
+              alt=""
+              className="h-24 w-24 rounded-lg border border-slate-200 object-cover"
+            />
+          ) : (
+            <div className="flex h-24 w-24 items-center justify-center rounded-lg border border-dashed border-slate-300 text-[11px] text-slate-400">
+              写真なし
+            </div>
+          )}
+          <div className="flex flex-col items-start gap-2">
+            <label
+              className={`cursor-pointer ${smallButtonClass} ${uploading ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              {uploading ? 'アップロード中…' : form.image_url ? '写真を変える' : '写真を選ぶ'}
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleImageChange}
+                disabled={uploading}
+              />
+            </label>
+            {form.image_url && (
+              <button
+                type="button"
+                onClick={() => update('image_url', null)}
+                className="text-xs text-slate-500 underline"
+              >
+                写真を外す
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* 位置の確認・微調整 */}
       <div>
         <div className="flex flex-wrap items-end justify-between gap-2">
@@ -577,7 +643,7 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
       <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5">
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || uploading}
           className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-50"
         >
           {saving ? '保存中…' : existing ? '変更を保存' : '登録する'}

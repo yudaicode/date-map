@@ -120,6 +120,14 @@ export default function SpotDetailScreen() {
 
         {status === 'ready' && spot && (
           <article className="flex flex-col gap-5">
+            {spot.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element -- アップロード時に縮小済みのため next/image の変換は不要
+              <img
+                src={spot.image_url}
+                alt={spot.name}
+                className="aspect-[4/3] w-full rounded-xl border border-slate-200 object-cover"
+              />
+            )}
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span

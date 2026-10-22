@@ -17,11 +17,11 @@ const TABLE = 'spots'
 
 /**
  * DBから読んだ1行を、アプリで扱う形に整える。
- * scenes 列は後から追加したので、追加前のDB（SQL未実行）では存在しない。
- * その場合でも画面が壊れないよう、空の一覧 [] を補う。
+ * scenes / image_url 列は後から追加したので、追加前のDB（SQL未実行）では存在しない。
+ * その場合でも画面が壊れないよう、空の値を補う。
  */
 function normalize(row: Spot): Spot {
-  return { ...row, scenes: row.scenes ?? [] }
+  return { ...row, scenes: row.scenes ?? [], image_url: row.image_url ?? null }
 }
 
 /** 一般公開用: 公開済みのスポットだけを取得 */

@@ -32,3 +32,127 @@ body {
   font-size: 20px;
   line-height: 1;
 }
+
+/* ------------------------------------------------------------
+   地図の目印（mapParts.ts の createPinElement が作る）
+   普段はピン。地図の外枠に .map-thumbs が付くと（＝ズームしたとき）サムネイルに変わる。
+   大きさを変えたら mapParts.ts の MARKER_SIZE も合わせる（吹き出しの位置がずれるため）
+   ------------------------------------------------------------ */
+.spot-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+/* 重なっているときも、指を乗せた目印は一番上に出す */
+.spot-marker:hover {
+  z-index: 5;
+}
+
+/* ピン: 丸＋下向きのとがり（とがりの先がスポットの位置） */
+.spot-marker__pin {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 8px;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  background: var(--pin-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+.spot-marker__pin::after,
+.spot-marker__thumb::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #ffffff;
+}
+.spot-marker__pin::after {
+  bottom: -10px;
+}
+
+/* サムネイル: 角丸の写真＋名前。Snapchat の地図のように、ズームすると現れる */
+.spot-marker__thumb {
+  position: relative;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+  transform-origin: 50% 100%;
+}
+.spot-marker__thumb::after {
+  bottom: -8px;
+}
+.spot-marker__photo {
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 3px solid #ffffff;
+  border-radius: 18px;
+  /* 写真が無いときの背景（ジャンルの色のグラデーション） */
+  background: linear-gradient(
+    135deg,
+    var(--pin-color),
+    color-mix(in srgb, var(--pin-color) 55%, #ffffff)
+  );
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  line-height: 1;
+}
+.spot-marker__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.spot-marker__name {
+  position: relative;
+  max-width: 100px;
+  margin-top: -10px;
+  padding: 2px 8px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.map-thumbs .spot-marker__pin {
+  display: none;
+}
+.map-thumbs .spot-marker__thumb {
+  display: flex;
+  animation: spot-marker-pop 0.2s ease-out;
+}
+@keyframes spot-marker-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+/* 「動きを減らす」設定の人には、ポンと出るアニメーションをしない */
+@media (prefers-reduced-motion: reduce) {
+  .map-thumbs .spot-marker__thumb {
+    animation: none;
+  }
+}

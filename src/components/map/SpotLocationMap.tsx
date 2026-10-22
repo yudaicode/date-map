@@ -19,7 +19,7 @@ export default function SpotLocationMap({ spot }: { spot: Spot }) {
       zoom: 15,
       cooperativeGestures: true, // ページのスクロールを邪魔しないため
     })
-    new Marker({ element: createPinElement(spot) }).setLngLat([spot.lng, spot.lat]).addTo(map)
+    new Marker({ element: createPinElement(spot), anchor: 'bottom' }).setLngLat([spot.lng, spot.lat]).addTo(map)
 
     return () => map.remove()
   }, [spot])

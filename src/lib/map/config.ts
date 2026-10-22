@@ -20,6 +20,10 @@ export const TOKYO_23KU_BOUNDS: [[number, number], [number, number]] = [
 
 export const MIN_ZOOM = 9
 
+// この倍率以上にズームすると、地図のピンが写真のサムネイルに変わる。
+// 14 ≒ 駅の周り（半径1kmほど）が画面に収まるくらい。これより引くとサムネイル同士が重なりすぎる
+export const THUMBNAIL_ZOOM = 14
+
 // OpenStreetMap のデータを使う場合、出典の表示が必須です（ライセンス条件）。
 export const MAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors | <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a>'

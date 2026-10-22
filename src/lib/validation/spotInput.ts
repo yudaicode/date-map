@@ -130,6 +130,9 @@ export function parseSpotRow(raw: unknown, isPublished: boolean): ParsedRow {
       lng: Number(lng.toFixed(6)),
       instagram_url,
       tiktok_url,
+      // 写真は一括登録では受け付けない（ネット上の画像のURLを貼れてしまうため）。
+      // 写真は1件ずつ編集画面でアップロードする
+      image_url: null,
       is_published: isPublished,
     },
     errors: [],

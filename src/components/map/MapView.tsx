@@ -12,8 +12,8 @@ import { wardLabel } from '@/constants/wards'
 import { budgetLabel } from '@/constants/budgets'
 import { timeOfDayLabel } from '@/constants/timeOfDay'
 import { sceneLabel } from '@/constants/scenes'
-import { DEFAULT_ZOOM, TOKYO_CENTER } from '@/lib/map/config'
-import { createBaseMap, createPinElement } from './mapParts'
+import { DEFAULT_ZOOM, THUMBNAIL_ZOOM, TOKYO_CENTER } from '@/lib/map/config'
+import { createBaseMap, createPinElement, popupOffsetFor, type MarkerMode } from './mapParts'
 
 type Props = {
   spots: Spot[]
@@ -38,6 +38,11 @@ function createPopupContent(spot: Spot, onOpenDetail: (spot: Spot) => void): HTM
   const el = document.createElement('div')
   el.style.cssText = 'font-family:inherit;max-width:240px'
   el.innerHTML = `
+    ${
+      spot.image_url
+        ? `<img src="${escapeHtml(spot.image_url)}" alt="" style="display:block;width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px">`
+        : ''
+    }
     <div style="font-weight:700;font-size:14px;margin-bottom:4px">${escapeHtml(spot.name)}</div>
     <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
       ${escapeHtml(wardLabel(spot.ward))} ・ ${escapeHtml(g?.label ?? spot.genre)}
@@ -76,6 +81,10 @@ export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
   // 地図はこの div の中に描かれます。
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  // いま置いてある吹き出しの一覧（ピン⇔サムネイルの切り替え時に位置を直すため）
+  const popupsRef = useRef<Popup[]>([])
+  // いまの表示が 'pin'（ピン）か 'thumb'（サムネイル）か
+  const modeRef = useRef<MarkerMode>('pin')
 
   // 最新の onOpenDetail を覚えておく箱（LocationPicker.tsx と同じ理由）
   const onOpenDetailRef = useRef(onOpenDetail)
@@ -91,6 +100,16 @@ export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
     const map = createBaseMap(containerRef.current, { center: TOKYO_CENTER, zoom: DEFAULT_ZOOM })
     mapRef.current = map
 
+    // ズームに合わせて、ピンとサムネイルを切り替える
+    const syncMarkerMode = () => {
+      const mode: MarkerMode = map.getZoom() >= THUMBNAIL_ZOOM ? 'thumb' : 'pin'
+      if (mode === modeRef.current) return
+      modeRef.current = mode
+      map.getContainer().classList.toggle('map-thumbs', mode === 'thumb')
+      popupsRef.current.forEach((popup) => popup.setOffset(popupOffsetFor(mode)))
+    }
+    map.on('zoom', syncMarkerMode)
+
     // 画面から消えるときに地図を片付ける（放置するとメモリを使い続けるため）
     return () => {
       map.remove()
@@ -104,15 +123,20 @@ export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
     const map = mapRef.current
     if (!map) return
 
-    const markers = spots.map((spot) => {
-      const popup = new Popup({ offset: 20, closeButton: true }).setDOMContent(
-        createPopupContent(spot, (s) => onOpenDetailRef.current(s))
-      )
-      return new Marker({ element: createPinElement(spot) })
+    // 北にあるスポットから順に置く。後から置いたものが上に重なるので、
+    // サムネイル同士が重なったとき、画面の下側（手前）にあるものが上に見えて自然になる
+    const ordered = [...spots].sort((a, b) => b.lat - a.lat)
+    const popups: Popup[] = []
+    const markers = ordered.map((spot) => {
+      const popup = new Popup({ offset: popupOffsetFor(modeRef.current), closeButton: true })
+        .setDOMContent(createPopupContent(spot, (s) => onOpenDetailRef.current(s)))
+      popups.push(popup)
+      return new Marker({ element: createPinElement(spot), anchor: 'bottom' })
         .setLngLat([spot.lng, spot.lat]) // 経度, 緯度 の順番
         .setPopup(popup)
         .addTo(map)
     })
+    popupsRef.current = popups
 
     // 絞り込み中は、残ったピンが全部見える位置まで地図を動かす
     if (fitToSpots && spots.length > 0) {

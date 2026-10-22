@@ -3,7 +3,13 @@
 
 // MapLibre v6 は「名前付きエクスポート」のみです。
 // （ネット上の古い記事にある import maplibregl from 'maplibre-gl' は v6 では動きません）
-import { getVersion, MapLibreMap, NavigationControl, setWorkerUrl } from 'maplibre-gl'
+import {
+  getVersion,
+  MapLibreMap,
+  NavigationControl,
+  setWorkerUrl,
+  type PositionAnchor,
+} from 'maplibre-gl'
 
 import type { Spot } from '@/types/spot'
 import { genre } from '@/constants/genres'
@@ -97,29 +103,78 @@ function applyJapaneseLabels(map: MapLibreMap) {
   }
 }
 
-/** ピン1個の見た目を作る。ジャンルごとに色と絵文字を変えています */
+/**
+ * スポット1件分の目印を作る。中に「ピン」と「サムネイル（写真カード）」の両方を入れておき、
+ * どちらを見せるかは CSS（globals.css の .spot-marker）で切り替える。
+ * 地図の外枠に .map-thumbs が付いているとサムネイル、付いていないとピンが見える。
+ *
+ * 【なぜ両方入れておくのか】
+ * ズームのたびに目印を作り直すと、ピンが一瞬消えてチラつき、数が多いと重くなる。
+ * 外枠のクラスを1つ付け外しするだけなら、ブラウザが一瞬で切り替えてくれる。
+ *
+ * 目印の「下端の中央」がスポットの位置になる（Marker の anchor: 'bottom' と組み合わせて使う）。
+ */
 export function createPinElement(spot: Spot): HTMLElement {
   const g = genre(spot.genre)
   const el = document.createElement('div')
-  // ここだけ Tailwind ではなく直接スタイル指定にしています。
-  // 理由: このピンは React ではなく JavaScript で直接作る要素なので、
-  //       直接指定のほうが確実に反映されます。
-  el.style.cssText = [
-    'width:34px',
-    'height:34px',
-    'border-radius:9999px',
-    `background:${g?.color ?? '#374151'}`,
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'font-size:16px',
-    'line-height:1',
-    'border:2px solid #ffffff',
-    'box-shadow:0 2px 6px rgba(0,0,0,0.35)',
-    'cursor:pointer',
-  ].join(';')
-  el.textContent = g?.emoji ?? '📍'
+  el.className = 'spot-marker'
+  // ジャンルの色。CSS 側で var(--pin-color) として使う
+  el.style.setProperty('--pin-color', g?.color ?? '#374151')
   el.setAttribute('aria-label', spot.name)
   el.title = spot.name
+
+  const pin = document.createElement('div')
+  pin.className = 'spot-marker__pin'
+  pin.textContent = g?.emoji ?? '📍'
+
+  const thumb = document.createElement('div')
+  thumb.className = 'spot-marker__thumb'
+  const photo = document.createElement('div')
+  photo.className = 'spot-marker__photo'
+  if (spot.image_url) {
+    const img = document.createElement('img')
+    img.src = spot.image_url
+    img.alt = ''
+    img.loading = 'lazy' // サムネイルが表示されるまで写真を読み込まない
+    img.decoding = 'async'
+    photo.appendChild(img)
+  } else {
+    // 写真が無いときは、ジャンルの色の背景に絵文字を大きく出す
+    photo.textContent = g?.emoji ?? '📍'
+  }
+  const name = document.createElement('div')
+  name.className = 'spot-marker__name'
+  name.textContent = spot.name
+  thumb.append(photo, name)
+
+  el.append(pin, thumb)
   return el
+}
+
+/** 目印の大きさ（吹き出しを目印の真上に出すために使う。globals.css の値と合わせる） */
+export const MARKER_SIZE = {
+  pin: { width: 34, height: 42 },
+  thumb: { width: 70, height: 84 },
+} as const
+
+export type MarkerMode = keyof typeof MARKER_SIZE
+
+/**
+ * 吹き出しの位置のずらし方。吹き出しは画面の端に近いと上下左右どこにでも出るので、
+ * 出る向きごとに「目印にかぶらない位置」を指定する。
+ */
+export function popupOffsetFor(mode: MarkerMode): Record<PositionAnchor, [number, number]> {
+  const { width, height } = MARKER_SIZE[mode]
+  const half = width / 2
+  return {
+    center: [0, -height / 2],
+    top: [0, 0],
+    'top-left': [0, 0],
+    'top-right': [0, 0],
+    bottom: [0, -height],
+    'bottom-left': [0, -height],
+    'bottom-right': [0, -height],
+    left: [half, -height / 2],
+    right: [-half, -height / 2],
+  }
 }

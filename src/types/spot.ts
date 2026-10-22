@@ -27,5 +27,8 @@ export type Spot = {
   lng: number // 経度（東西。東京は 139.7 くらい）
   instagram_url: string | null // 元投稿リンク。無ければ null
   tiktok_url: string | null
+  // 写真（地図のサムネイル用）。管理画面でアップロードした写真のURL。無ければ null
+  // 他人のSNS投稿の画像は使わない（自分で撮った写真か、掲載の許可をもらった写真だけ）
+  image_url: string | null
   is_published: boolean // false なら下書き（一般公開されない）
 }
