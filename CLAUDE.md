@@ -18,7 +18,7 @@ SNS（Instagram / TikTok）で見つけた**東京23区のデートスポット*
 | 地図タイル | OpenFreeMap（`tiles.openfreemap.org`） | **APIキー・クレカ登録 不要／無料**。乗り換え先候補は MapTiler（月10万タイル無料） |
 | ジオコーディング | **国土地理院 住所検索API** | 無料・キー不要・日本の住所に強い。CORS非対応のため `/api/geocode` で中継する |
 | DB / 認証 | Supabase（`@supabase/supabase-js` のみ。`@supabase/ssr` は使わない） | iOS版（Expo）からも同じDBを使い回せる |
-| 公開 | Vercel（Phase 4で導入） | Next.js と相性が良く無料枠で足りる |
+| 公開 | Vercel（Hobby / 無料） | Next.js と相性が良く無料枠で足りる |
 
 ### 実装上の重要な注意点
 - **MapLibre v6 には default export が無い。** `import maplibregl from 'maplibre-gl'` は動かない。
@@ -149,7 +149,7 @@ scripts/
 | 1 | 開発環境の準備＋地図にダミースポット10件を表示 | **完了** |
 | 2 | Supabase接続・テーブル作成・管理画面（住所→緯度経度の自動取得） | **完了** |
 | 3 | フィルタ（区／ジャンル／予算／時間帯）とスポット詳細画面 | **完了** |
-| 4 | スマホ表示の調整と Vercel への公開 | 未着手 |
+| 4 | スマホ表示の調整と Vercel への公開 | **完了** |
 | 5 | iOSアプリ化（Expo / React Native） | 後日 |
 
 ### Phase 1 でやったこと
@@ -229,6 +229,34 @@ scripts/
 - 詳細画面のタイトルはブラウザ側で書き換えているため、SNSでURLを共有したときの
   プレビューには反映されない（必要なら Phase 4 でサーバー側取得を検討）
 - 管理画面の位置調整の地図は共通化の影響を受けるが、ログインが必要なため自動検証はしていない
+
+### Phase 4 でやったこと
+- スマホ表示の調整（375px幅で全ページを撮影して確認）
+  - 絞り込みボタンをスマホ幅で高さ約42pxに（指で押しやすく）
+  - 入力欄をスマホ幅で16px（`text-base sm:text-sm`）。**16px未満だとiPhoneが入力時に画面を拡大する**
+  - ページ途中の小さな地図（詳細・位置調整）は `cooperativeGestures`（2本指でだけ動く）。
+    1本指はページのスクロールを優先。案内文は `locale` で日本語化
+  - 地図の回転・傾きを無効化（方位磁針ボタンも非表示）、吹き出しの×ボタンを32pxに
+  - スマホ幅ではヘッダーの説明文を省き、件数だけ表示
+  - 地図右下の出典表示はスマホ幅で最初だけ開き、地図を動かすと畳まれる。
+    これは MapLibre 標準の動き（OSM の出典表示ルールへの配慮）なので、あえて変えていない
+- 公開
+  - GitHub: https://github.com/yudaicode/date-map （Private）
+  - 本番URL: https://date-map-murex.vercel.app/
+  - **main ブランチに push すると Vercel が自動で本番を更新する**
+  - Vercel の環境変数に `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` を登録済み。
+    Vercel は「KEY に NEXT_PUBLIC_ が付いている」と警告するが、publishable キーは公開前提なので
+    **接頭辞は消さない**（消すとブラウザから読めず接続エラーになる）。種類は Config でよい
+  - 環境変数を変えたら、Deployments → … → Redeploy しないと反映されない
+- 検証（本番URLに対してヘッドレスChrome）: ピン11個 / タイル取得OK / ワーカー配信200 /
+  絞り込み・詳細・戻る / 未ログインで /admin → ログイン画面 / geocode 正常・23区外422。
+  エラーは意図的な誤ログインの400のみ
+
+### Phase 4 の既知の留保事項
+- **Supabase の無料プランは、1週間アクセスが無いとプロジェクトが一時停止される。**
+  停止中はサイトに「スポットを読み込めませんでした」と出る。Supabase の管理画面から再開できる
+- 詳細画面のURLをSNSで共有したときのプレビューにスポット名は出ない（Phase 3 の留保のまま）
+- 独自ドメイン（例: date-map.jp）は未設定。必要になったら Vercel の Domains から追加する
 
 ---
 
