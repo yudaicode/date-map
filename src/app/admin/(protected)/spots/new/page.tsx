@@ -12,7 +12,7 @@ export default function NewSpotPage() {
       </Link>
       <h1 className="mt-2 text-lg font-bold tracking-tight">スポットを新規登録</h1>
       <p className="mt-1 text-xs text-slate-500">
-        住所を入れて「住所から位置を取得」を押すと、地図のピンが自動で移動します。
+        投稿URLを読み込む → スポット名を入れて「施設名で位置を検索」の順が早いです。見つからなければ住所から位置を取得できます。
       </p>
 
       <div className="mt-6">

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 
 import SpotLocationMapClient from '@/components/map/SpotLocationMapClient'
+import SnsEmbed from '@/components/spot/SnsEmbed'
 import { StatusMessage } from '@/components/ui/StatusMessage'
 import { mapHrefFromMemory } from '@/components/spot/mapQueryMemory'
 import { fetchSpot } from '@/lib/queries/spots'
@@ -12,6 +13,7 @@ import { genre } from '@/constants/genres'
 import { wardLabel } from '@/constants/wards'
 import { budgetLabel } from '@/constants/budgets'
 import { timeOfDayLabel } from '@/constants/timeOfDay'
+import { snsEmbedUrl } from '@/lib/sns'
 import type { Spot } from '@/types/spot'
 
 /** 見出しと中身の1行（予算・時間帯など） */
@@ -87,6 +89,9 @@ export default function SpotDetailScreen() {
   }
 
   const g = spot ? genre(spot.genre) : undefined
+  const embeddablePosts = [spot?.instagram_url, spot?.tiktok_url].filter(
+    (url): url is string => !!url && snsEmbedUrl(url) !== null
+  )
 
   return (
     <div className="h-full overflow-y-auto bg-slate-50">
@@ -163,6 +168,18 @@ export default function SpotDetailScreen() {
                 )}
               </div>
             </section>
+
+            {/* 元の投稿を公式の埋め込みで表示（埋め込めない形のURLのときは上のボタンだけ） */}
+            {embeddablePosts.length > 0 && (
+              <section className="flex flex-col gap-2">
+                <h2 className="text-xs font-semibold text-slate-500">元の投稿</h2>
+                <div className="flex flex-wrap gap-4">
+                  {embeddablePosts.map((url) => (
+                    <SnsEmbed key={url} url={url} />
+                  ))}
+                </div>
+              </section>
+            )}
           </article>
         )}
       </div>

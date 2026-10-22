@@ -56,7 +56,11 @@ export default function AdminGuard({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (state === 'signedOut') router.replace('/admin/login')
+    if (state !== 'signedOut') return
+    // ログイン後に元のページへ戻れるよう、今のURLを next として渡す
+    // （スマホの「共有」から開いた登録画面の ?url=... を失わないため）
+    const next = window.location.pathname + window.location.search
+    router.replace(`/admin/login?next=${encodeURIComponent(next)}`)
   }, [state, router])
 
   if (state === 'failed') {

@@ -85,7 +85,9 @@ src/
 │   ├── page.tsx                          「/」= 地図画面（Suspense で SpotsScreen を包むだけ）
 │   ├── spots/[id]/page.tsx               スポット詳細（Suspense で SpotDetailScreen を包むだけ）
 │   ├── globals.css
-│   ├── api/geocode/route.ts              国土地理院APIへの中継
+│   ├── api/geocode/route.ts              国土地理院APIへの中継（住所→位置）
+│   ├── api/place-search/route.ts         OpenStreetMap Nominatim への中継（施設名→住所・位置の候補）
+│   ├── api/sns-info/route.ts             投稿URLの整形・TikTok短縮URLの解決・埋め込みURL
 │   └── admin/                            管理画面
 │       ├── layout.tsx                        共通ヘッダー
 │       ├── login/page.tsx                    ログイン（門番の外）
@@ -102,7 +104,8 @@ src/
 │   │   ├── SpotsScreen.tsx                       トップ画面の中身（取得・絞り込み・表示）
 │   │   ├── FilterPanel.tsx                       絞り込みパネル
 │   │   ├── SpotDetailScreen.tsx                  詳細画面の中身
-│   │   └── mapQueryMemory.ts                     「地図に戻る」用に絞り込み条件を一時保存
+│   │   ├── mapQueryMemory.ts                     「地図に戻る」用に絞り込み条件を一時保存
+│   │   └── SnsEmbed.tsx                          Instagram / TikTok 公式埋め込み（iframe）
 │   ├── admin/                                管理画面の部品（すべて client）
 │   │   ├── AdminGuard.tsx                        ログイン確認（UIのみ。防御はRLS）
 │   │   ├── AdminSpotList.tsx                     一覧
@@ -118,7 +121,8 @@ src/
     ├── supabase/client.ts, auth.ts       DB接続 / ログイン
     ├── queries/spots.ts                  取得・登録・更新・削除（iOS版と共有する中心）
     ├── filters/spotFilter.ts             絞り込みのルールとURLとの変換（iOS版と共有する中心）
-    └── geocode.ts                        住所→緯度経度（/api/geocode を呼ぶ）
+    ├── geocode.ts                        住所・施設名の検索（/api/geocode, /api/place-search を呼ぶ）
+    └── sns.ts                            投稿URLの判定・整形・埋め込みURL（iOS版と共有する中心）
 
 supabase/
 ├── migrations/0001_create_spots.sql   表・CHECK制約・索引・トリガー・RLS
@@ -257,6 +261,31 @@ scripts/
   停止中はサイトに「スポットを読み込めませんでした」と出る。Supabase の管理画面から再開できる
 - 詳細画面のURLをSNSで共有したときのプレビューにスポット名は出ない（Phase 3 の留保のまま）
 - 独自ドメイン（例: date-map.jp）は未設定。必要になったら Vercel の Domains から追加する
+
+### 投稿を効率よく登録する仕組み（Phase 4 の後に追加）
+- 方針: **SNSからの自動収集はしない。** リンクを貼り、表示は各サービス公式の埋め込みだけを使う。
+  他人の写真・動画を保存・転載しない。メモは自分の言葉で書く
+- ① iPhone の「共有」→ ショートカット「デートマップに登録」→
+  `/admin/spots/new?url=<URLエンコードした共有内容>` を Safari で開く。
+  フォームが共有内容からURLを抜き出し（前後の文章付きでもOK）、Instagram / TikTok の欄へ自動で振り分ける
+  - 未ログインなら AdminGuard が `/admin/login?next=...` へ送り、ログイン後に元のURLへ戻す。
+    `next` は `/admin` で始まるものだけ許可（外部サイトへの転送に悪用されないため）
+  - Instagram の `?igsh=`（共有した人の手がかり）や TikTok の追跡用パラメータは保存前に除去
+- ② 「施設名で位置を検索」: Nominatim（1秒1回まで・User-Agent必須・入力のたびに呼ばない）。
+  有名施設は見つかるが**小さな店は見つからないことが多く、別の場所が出ることもある**
+  （例: teamLab Planets が千代田区で出た）。候補は住所を見て選ばせ、地図で確認させる。
+  見つからないときは Googleマップ検索へのリンクを出し、住所をコピーして既存の住所検索に回す
+  - 住所は「東京都＋区＋町丁目（＋番地）」まで。番地が無いことが多い
+  - 住所から位置を取得したときも、住所に含まれる区名で区の選択を自動で合わせる
+- ③ 詳細画面に元の投稿を埋め込み表示: Instagram は `/p/<code>/embed/`、TikTok は `/player/v1/<id>`
+  - **TikTok の oEmbed は（2026年10月時点で）投稿者名・説明文を返さない。** 動画番号（embed_product_id）だけ。
+    フォームの「投稿者」「説明」表示は返ってきたときだけ出る作り
+  - TikTok 短縮URL（vt.tiktok.com）は転送先をたどり、**動画ページに着いたときだけ**置き換える
+    （無効な短縮URLはトップページに転送されるため。置き換えると元URLが失われる）
+  - Instagram の埋め込み内部で Instagram 自身が console.error を出すことがある（こちらの不具合ではない）
+- 検証: 未ログイン→next付きログイン画面 / 共有テキストからTikTok欄へ自動入力・埋め込み表示 /
+  「東京タワー」→港区・座標 / 見つからない店→0件表示とGoogleマップリンク / 住所→区の自動選択 /
+  詳細画面に Instagram・TikTok の iframe（モックしたスポットで確認）
 
 ---
 

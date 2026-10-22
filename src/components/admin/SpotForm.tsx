@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import LocationPickerClient from './LocationPickerClient'
+import SnsEmbed from '@/components/spot/SnsEmbed'
 import { StatusMessage } from '@/components/ui/StatusMessage'
 import { WARDS } from '@/constants/wards'
 import { GENRES } from '@/constants/genres'
 import { BUDGET_BANDS } from '@/constants/budgets'
 import { TIME_OF_DAY } from '@/constants/timeOfDay'
-import { geocodeAddress } from '@/lib/geocode'
+import { geocodeAddress, searchPlaces, wardFromAddress, type PlaceCandidate } from '@/lib/geocode'
+import { extractUrl, fetchSnsInfo, type SnsInfo } from '@/lib/sns'
 import { createSpot, deleteSpot, updateSpot, type SpotInput } from '@/lib/queries/spots'
 import { TOKYO_CENTER } from '@/lib/map/config'
 import type { Spot } from '@/types/spot'
@@ -62,6 +64,22 @@ const labelClass = 'block text-xs font-semibold text-slate-600'
 // iPhone は16px未満の入力欄に触れると画面を勝手に拡大してしまうため。
 const inputClass =
   'w-full rounded-md border border-slate-300 px-3 py-2 text-base outline-none focus:border-slate-900 sm:text-sm'
+const smallButtonClass =
+  'shrink-0 rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-50'
+
+/** 施設が見つからないときに、Googleマップで調べてもらうためのリンク */
+function googleMapsSearchUrl(name: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} 東京`)}`
+}
+
+/**
+ * スマホの「共有」から開かれたときの投稿URL（/admin/spots/new?url=... の ... の部分）。
+ * この部品はログイン確認の後にブラウザ側でだけ描かれるので、window を直接読んでよい。
+ */
+function sharedUrlFromAddressBar(): string | null {
+  if (typeof window === 'undefined') return null
+  return extractUrl(new URLSearchParams(window.location.search).get('url') ?? '')
+}
 
 export default function SpotForm({ existing }: { existing?: Spot }) {
   const router = useRouter()
@@ -74,9 +92,91 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
+  // 共有から開かれた場合の投稿URL（編集画面では使わない）
+  const [sharedUrl] = useState(() => (existing ? null : sharedUrlFromAddressBar()))
+  const [snsInput, setSnsInput] = useState(sharedUrl ?? '')
+  const [snsLoading, setSnsLoading] = useState(Boolean(sharedUrl))
+  const [snsInfo, setSnsInfo] = useState<SnsInfo | null>(null)
+
+  const [places, setPlaces] = useState<PlaceCandidate[] | null>(null) // null = まだ検索していない
+  const [placeSearching, setPlaceSearching] = useState(false)
+
   /** 入力欄1つ分の値を書き換えるための小さな関数 */
   function update<K extends keyof SpotInput>(key: K, value: SpotInput[K]) {
     setForm((previous) => ({ ...previous, [key]: value }))
+  }
+
+  /** 投稿URLの読み込み結果を、Instagram / TikTok どちらかの欄に入れる */
+  function applySnsInfo(info: SnsInfo) {
+    setSnsInfo(info)
+    setForm((previous) => ({
+      ...previous,
+      [info.platform === 'instagram' ? 'instagram_url' : 'tiktok_url']: info.url,
+    }))
+  }
+
+  function showError(e: unknown) {
+    setError(e instanceof Error ? e.message : String(e))
+  }
+
+  // 共有から開かれたときは、最初に1回だけ自動で投稿URLを読み込む
+  useEffect(() => {
+    if (!sharedUrl) return
+    fetchSnsInfo(sharedUrl)
+      .then(applySnsInfo)
+      .catch(showError)
+      .finally(() => setSnsLoading(false))
+  }, [sharedUrl])
+
+  /** 貼り付けた投稿URLを読み込む */
+  async function handleLoadSns() {
+    setError('')
+    const url = extractUrl(snsInput)
+    if (!url) {
+      setError('投稿URL（https:// から始まる文字）が見つかりません。')
+      return
+    }
+    setSnsLoading(true)
+    try {
+      applySnsInfo(await fetchSnsInfo(url))
+    } catch (e) {
+      showError(e)
+    } finally {
+      setSnsLoading(false)
+    }
+  }
+
+  /** スポット名（施設名）から、住所と位置の候補を探す */
+  async function handlePlaceSearch() {
+    setError('')
+    setNotice('')
+    if (!form.name.trim()) {
+      setError('先にスポット名（施設名・店名）を入力してください。')
+      return
+    }
+    setPlaceSearching(true)
+    try {
+      setPlaces(await searchPlaces(form.name))
+    } catch (e) {
+      showError(e)
+    } finally {
+      setPlaceSearching(false)
+    }
+  }
+
+  /** 検索候補を選んだら、住所・区・位置をまとめて入れる */
+  function choosePlace(place: PlaceCandidate) {
+    setForm((previous) => ({
+      ...previous,
+      address: place.address,
+      ward: place.ward ?? previous.ward,
+      lat: place.lat,
+      lng: place.lng,
+    }))
+    setPlaces(null)
+    setNotice(
+      `「${place.name}」の位置を設定しました。住所は番地まで入らないことが多いので、必要なら書き足してください。下の地図でピンの位置も確認してください。`
+    )
   }
 
   /** 住所 → 緯度経度 */
@@ -92,7 +192,14 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
     setGeocoding(true)
     try {
       const result = await geocodeAddress(form.address)
-      setForm((previous) => ({ ...previous, lat: result.lat, lng: result.lng }))
+      // 住所に区名が入っていれば、区の選択も自動で合わせる
+      const ward = wardFromAddress(result.matchedAddress)
+      setForm((previous) => ({
+        ...previous,
+        lat: result.lat,
+        lng: result.lng,
+        ward: ward ?? previous.ward,
+      }))
       setNotice(
         `「${result.matchedAddress}」として認識しました。ズレている場合は、下の地図でピンをドラッグして直してください。`
       )
@@ -154,18 +261,121 @@ export default function SpotForm({ existing }: { existing?: Spot }) {
       {error && <StatusMessage tone="error" title="エラー" detail={error} />}
       {notice && <StatusMessage title="位置を取得しました" detail={notice} />}
 
+      {/* ① SNSの投稿URL。共有から開いた場合は自動で入る */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <label className={labelClass} htmlFor="sns">
+          SNSの投稿URL
+        </label>
+        <p className="mt-0.5 text-[11px] text-slate-500">
+          Instagram・TikTok の「共有」→「リンクをコピー」で取ったURLを貼って「読み込む」。
+          下の Instagram / TikTok の欄に自動で入ります。
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <input
+            id="sns"
+            // type="url" にしないのは、共有で付いてくる前後の文章ごと貼れるようにするため
+            type="text"
+            inputMode="url"
+            className={`min-w-50 flex-1 ${inputClass}`}
+            value={snsInput}
+            onChange={(e) => setSnsInput(e.target.value)}
+            placeholder="https://www.instagram.com/p/..."
+          />
+          <button
+            type="button"
+            onClick={handleLoadSns}
+            disabled={snsLoading}
+            className={smallButtonClass}
+          >
+            {snsLoading ? '読み込み中…' : '読み込む'}
+          </button>
+        </div>
+
+        {snsInfo && (
+          <div className="mt-3 flex flex-col gap-2">
+            <p className="text-xs text-slate-600">
+              {snsInfo.platform === 'instagram' ? 'Instagram' : 'TikTok'} の欄に入れました
+              {snsInfo.author && `（投稿者 ${snsInfo.author}）`}
+            </p>
+            {snsInfo.caption && (
+              <p className="line-clamp-4 rounded-md bg-slate-50 px-3 py-2 text-xs whitespace-pre-wrap text-slate-600">
+                <span className="font-semibold">投稿の説明（ヒント用・保存されません）</span>
+                <br />
+                {snsInfo.caption}
+              </p>
+            )}
+            <SnsEmbed url={snsInfo.url} />
+          </div>
+        )}
+      </div>
+
       <div>
         <label className={labelClass} htmlFor="name">
           スポット名 <span className="text-rose-600">必須</span>
         </label>
-        <input
-          id="name"
-          className={`mt-1 ${inputClass}`}
-          value={form.name}
-          onChange={(e) => update('name', e.target.value)}
-          required
-          placeholder="例: SHIBUYA SKY"
-        />
+        <div className="mt-1 flex flex-wrap gap-2">
+          <input
+            id="name"
+            className={`min-w-50 flex-1 ${inputClass}`}
+            value={form.name}
+            onChange={(e) => update('name', e.target.value)}
+            required
+            placeholder="例: 東京タワー"
+          />
+          <button
+            type="button"
+            onClick={handlePlaceSearch}
+            disabled={placeSearching}
+            className={smallButtonClass}
+          >
+            {placeSearching ? '検索中…' : '施設名で位置を検索'}
+          </button>
+        </div>
+
+        {/* ② 施設名の検索結果 */}
+        {places && (
+          <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3 text-xs">
+            {places.length === 0 ? (
+              <p className="text-slate-600">
+                見つかりませんでした。小さなお店は登録されていないことがあります。
+              </p>
+            ) : (
+              <>
+                <p className="mb-2 text-slate-500">
+                  当てはまるものを選んでください（違う場所が出ることもあるので住所を確認）
+                </p>
+                <ul className="flex flex-col gap-1.5">
+                  {places.map((place) => (
+                    <li key={`${place.lat},${place.lng}`}>
+                      <button
+                        type="button"
+                        onClick={() => choosePlace(place)}
+                        className="w-full rounded-md border border-slate-200 px-3 py-2 text-left transition-colors hover:border-slate-900"
+                      >
+                        <span className="block text-sm font-semibold text-slate-900">
+                          {place.name}
+                        </span>
+                        <span className="block text-slate-600">{place.address}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p className="mt-2 text-slate-600">
+              見つからない・違うときは{' '}
+              <a
+                href={googleMapsSearchUrl(form.name)}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold underline"
+              >
+                Googleマップで調べる ↗
+              </a>{' '}
+              → 住所をコピーして下の住所欄に貼り、「住所から位置を取得」を押してください。
+            </p>
+          </div>
+        )}
       </div>
 
       <div>

@@ -6,6 +6,16 @@ import { useRouter } from 'next/navigation'
 import { StatusMessage } from '@/components/ui/StatusMessage'
 import { signIn } from '@/lib/supabase/auth'
 
+/**
+ * ログイン後に移動する先。門番（AdminGuard）が付けた ?next=... を読む。
+ * 管理画面の中（/admin で始まる）以外へは移動させない
+ * （悪意のあるリンクで外部サイトへ飛ばされるのを防ぐため）。
+ */
+function nextPath(): string {
+  const next = new URLSearchParams(window.location.search).get('next') ?? ''
+  return next.startsWith('/admin') && !next.startsWith('/admin/login') ? next : '/admin'
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -20,7 +30,7 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
-      router.replace('/admin')
+      router.replace(nextPath())
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
       setSubmitting(false)
