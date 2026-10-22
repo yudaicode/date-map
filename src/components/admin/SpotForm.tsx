@@ -58,8 +58,10 @@ function toInput(spot: Spot): SpotInput {
 }
 
 const labelClass = 'block text-xs font-semibold text-slate-600'
+// text-base sm:text-sm: スマホ幅では16px、広い画面では14px。
+// iPhone は16px未満の入力欄に触れると画面を勝手に拡大してしまうため。
 const inputClass =
-  'w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900'
+  'w-full rounded-md border border-slate-300 px-3 py-2 text-base outline-none focus:border-slate-900 sm:text-sm'
 
 export default function SpotForm({ existing }: { existing?: Spot }) {
   const router = useRouter()

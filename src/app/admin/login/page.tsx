@@ -46,7 +46,7 @@ export default function LoginPage() {
             type="email"
             autoComplete="username"
             required
-            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-900"
+            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-slate-900 sm:text-sm"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -61,7 +61,7 @@ export default function LoginPage() {
             type="password"
             autoComplete="current-password"
             required
-            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-900"
+            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-slate-900 sm:text-sm"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />

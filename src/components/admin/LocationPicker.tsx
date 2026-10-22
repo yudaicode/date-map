@@ -35,7 +35,11 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
 
-    const map = createBaseMap(containerRef.current, { center: [lng, lat], zoom: 16 })
+    const map = createBaseMap(containerRef.current, {
+      center: [lng, lat],
+      zoom: 16,
+      cooperativeGestures: true, // フォームのスクロールを邪魔しないため
+    })
 
     // draggable: true でピンをつまんで動かせるようになる
     const marker = new Marker({ draggable: true, color: '#e11d48' })

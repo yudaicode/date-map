@@ -37,7 +37,8 @@ function Chip({
       type="button"
       aria-pressed={selected} // 読み上げ機能に「選択中かどうか」を伝える
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+      // スマホ幅では指で押しやすいよう高さを約40pxに、広い画面では小さめにする
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2.5 text-[13px] transition-colors md:px-3 md:py-1.5 md:text-xs ${
         selected
           ? 'border-slate-900 bg-slate-900 text-white'
           : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'

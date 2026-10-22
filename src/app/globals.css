@@ -23,3 +23,12 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans",
     "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif;
 }
+
+/* 地図の吹き出しの「×」ボタン。標準のままだと小さく、スマホの指で押しにくいため大きくする */
+/* 親のクラスも付けて指定を強くしている（MapLibre 側のCSSに上書きされないため） */
+.maplibregl-popup .maplibregl-popup-close-button {
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  line-height: 1;
+}

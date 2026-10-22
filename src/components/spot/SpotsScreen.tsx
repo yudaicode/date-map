@@ -90,7 +90,8 @@ export default function SpotsScreen() {
         <div className="min-w-0">
           <h1 className="text-base font-bold tracking-tight">デートマップ</h1>
           <p className="mt-0.5 text-xs text-slate-500">
-            東京23区のデートスポット{' '}
+            {/* スマホ幅では1行に収まるよう説明を省く */}
+            <span className="hidden sm:inline">東京23区のデートスポット </span>
             {status === 'ready'
               ? activeCount > 0
                 ? `${spots.length}件中 ${visibleSpots.length}件を表示`

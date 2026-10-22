@@ -14,7 +14,11 @@ export default function SpotLocationMap({ spot }: { spot: Spot }) {
   useEffect(() => {
     if (!containerRef.current) return
 
-    const map = createBaseMap(containerRef.current, { center: [spot.lng, spot.lat], zoom: 15 })
+    const map = createBaseMap(containerRef.current, {
+      center: [spot.lng, spot.lat],
+      zoom: 15,
+      cooperativeGestures: true, // ページのスクロールを邪魔しないため
+    })
     new Marker({ element: createPinElement(spot) }).setLngLat([spot.lng, spot.lat]).addTo(map)
 
     return () => map.remove()

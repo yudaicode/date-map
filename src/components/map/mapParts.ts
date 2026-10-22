@@ -21,7 +21,16 @@ import {
  */
 export function createBaseMap(
   container: HTMLElement,
-  options: { center: [number, number]; zoom: number }
+  options: {
+    center: [number, number]
+    zoom: number
+    /**
+     * true にすると、スマホでは「2本指」でだけ地図が動く。
+     * ページの途中に置く小さな地図用。1本指のときはページのスクロールが優先される
+     * （そうしないと、地図の上で指を動かしてもページがスクロールできなくなる）
+     */
+    cooperativeGestures?: boolean
+  }
 ): MapLibreMap {
   // 地図データを裏で処理する「ワーカー」の場所を明示的に指定する。
   // MapLibre v6 は本来この場所を自分で推測するが、Next.js がファイルをまとめると
@@ -37,9 +46,23 @@ export function createBaseMap(
     minZoom: MIN_ZOOM,
     maxBounds: TOKYO_23KU_BOUNDS, // 23区の外へ行きすぎないようにする
     attributionControl: { customAttribution: MAP_ATTRIBUTION },
+    cooperativeGestures: options.cooperativeGestures ?? false,
+    // 地図の回転・傾きは使わない。スマホで2本指操作したときに
+    // 意図せず地図が回って北がわからなくなるのを防ぐため
+    maxPitch: 0,
+    // 地図の上に出る案内文を日本語にする
+    locale: {
+      'CooperativeGesturesHandler.MobileHelpText': '2本指で地図を動かせます',
+      'CooperativeGesturesHandler.WindowsHelpText': 'Ctrl キーを押しながらスクロールで拡大・縮小',
+      'CooperativeGesturesHandler.MacHelpText': '⌘ キーを押しながらスクロールで拡大・縮小',
+    },
   })
+  map.dragRotate.disable()
+  map.keyboard.disableRotation()
+  map.touchZoomRotate.disableRotation()
 
-  map.addControl(new NavigationControl(), 'top-right') // 拡大・縮小ボタン
+  // 拡大・縮小ボタン（回転を使わないので方位磁針は出さない）
+  map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
 
   // スタイル（地図の見た目データ）の読み込みが終わってから日本語化する。
   // 読み込み前に実行しても、まだレイヤーが存在しないため効果がない。
