@@ -55,6 +55,8 @@ export default function SwipeScreen() {
   const [index, setIndex] = useState(0) // いま一番上にあるカードの番号
   const [history, setHistory] = useState<{ spot: Spot; dir: SwipeDirection }[]>([])
   const [exiting, setExiting] = useState<SwipeDirection | null>(null)
+  // 保存したときにカードの上で ♥ がはじける演出。数字が変わるたびに描き直してアニメーションをやり直す
+  const [likeBurst, setLikeBurst] = useState(0)
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -92,13 +94,17 @@ export default function SwipeScreen() {
     setDeck(shuffle(candidates))
     setIndex(0)
     setHistory([])
+    setLikeBurst(0)
   }
 
   function swipe(dir: SwipeDirection) {
     if (!deck || exiting || index >= deck.length) return
     const spot = deck[index]
     // 保存はすぐに行う（アニメーション中に画面を離れても保存されるように）
-    if (dir === 1) saveSpot(spot.id)
+    if (dir === 1) {
+      saveSpot(spot.id)
+      setLikeBurst((n) => n + 1)
+    }
     setExiting(dir)
     exitTimer.current = setTimeout(() => {
       setHistory((h) => [...h, { spot, dir }])
@@ -141,7 +147,7 @@ export default function SwipeScreen() {
           <h1 className="font-display text-base font-bold tracking-tight">スワイプで選ぶ</h1>
           <p className="mt-0.5 text-xs text-muted">
             {deck && !finished
-              ? `${index + 1} / ${deck.length}枚目`
+              ? `${index + 1} / ${deck.length}枚目${likedCount > 0 ? ` ・ ♥ ${likedCount}件保存` : ''}`
               : '行き先が決まっていないデートに'}
           </p>
         </div>
@@ -229,6 +235,11 @@ export default function SwipeScreen() {
                     onSwipe={swipe}
                   />
                 ))}
+              {likeBurst > 0 && (
+                <span key={likeBurst} aria-hidden="true" className="like-burst">
+                  ♥
+                </span>
+              )}
             </div>
             {index === 0 && (
               <p className="mt-2 text-center text-[11px] text-muted">

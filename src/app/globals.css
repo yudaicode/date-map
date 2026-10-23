@@ -434,3 +434,38 @@ body {
     animation: none;
   }
 }
+
+/* スワイプで保存したときに、カードの真ん中で ♥ がはじける（Duolingo のような「やった感」の演出）。
+   SwipeScreen.tsx が保存のたびに描き直すので、毎回最初から動く */
+.like-burst {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  z-index: 20;
+  pointer-events: none;
+  color: var(--t-accent);
+  font-size: 96px;
+  line-height: 1;
+  text-shadow: 0 6px 24px color-mix(in srgb, var(--t-accent) 50%, transparent);
+  opacity: 0;
+  animation: like-burst 0.65s ease-out;
+}
+@keyframes like-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -80%) scale(1.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .like-burst {
+    display: none;
+  }
+}
