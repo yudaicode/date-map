@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------
-   着せ替え（テーマ）の土台
-   画面の色・角の丸み・見出しの文字は、すべてここの「--t-〇〇」を通して決める。
+   着せ替え（テーマ）
+   画面の色・角の丸み・文字は、すべてここの「--t-〇〇」を通して決める。
    テーマは <html data-theme="〇〇"> で切り替わる（src/lib/theme/ が付け外しする）。
 
    【新しいテーマを足すとき】
-   1. 下の [data-theme="standard"] をまるごとコピーし、名前と値を書き換える
+   1. 下の [data-theme="pop"] などをまるごとコピーし、名前と値を書き換える
+      （書かなかった値は、:root に書いた標準の値が使われる）
    2. src/lib/theme/themes.ts の THEMES に1行足す（地図の見た目もそこで決める）
    画面の部品には色を直接書かず、bg-surface / text-muted などのテーマの名前を使うこと
+   文字の --font-rounded などは app/layout.tsx で読み込んでいる（next/font）
    ------------------------------------------------------------ */
+
+/* スタンダード（白×ローズ。最初に作った見た目）。全部の値の基準でもある */
 :root,
 [data-theme="standard"] {
   color-scheme: light;
@@ -30,12 +34,127 @@
   --t-accent-soft: #fff1f2; /* 主役の色の薄い面 */
   --t-accent-line: #fda4af; /* 主役の色の枠線 */
   --t-accent-strong: #881337; /* 主役の色の濃い文字 */
-  --t-marker-ring: #ffffff; /* 地図の目印の白いふち */
+  --t-accent-fill: none; /* 大きなボタンの模様（グラデーション）。none なら主役の色のベタ塗り */
+  --t-accent-glow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* 大きなボタンの影 */
+  --t-marker-ring: #ffffff; /* 地図の目印のふち */
+  --t-map-filter: none; /* 地図の色味の調整（CSS の filter） */
+  --t-ctrl-icon-filter: none; /* 地図の＋−ボタンの絵の色の調整（暗いテーマで白くする） */
   --t-radius-card: 16px; /* スワイプのカードの角の丸み */
   --t-radius-panel: 12px; /* 一覧の行・写真の角の丸み */
   --t-radius-button: 12px; /* 大きなボタンの角の丸み */
+  --t-radius-control: 6px; /* ヘッダーの小さなボタンの角の丸み */
   --t-radius-pill: 9999px; /* 選択ボタン（チップ）の角の丸み */
-  --t-font-display: inherit; /* 見出しの文字（標準は本文と同じ） */
+  --t-font-body: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI",
+    "Meiryo", sans-serif; /* 本文の文字 */
+  --t-font-display: var(--t-font-body); /* 見出しの文字 */
+}
+
+/* 甘めポップ（最初に見せるテーマ）: ピンク〜オレンジ、まんまるのボタン、丸い文字 */
+[data-theme="pop"] {
+  color-scheme: light;
+  --t-canvas: #fff5f8;
+  --t-surface: #ffffff;
+  --t-sunken: #ffebf2;
+  --t-line: #f8d9e5;
+  --t-line-strong: #efbfd2;
+  --t-ink: #2b1a24;
+  --t-ink-soft: #4a3240;
+  --t-ink-mid: #5e4553;
+  --t-muted: #866a78;
+  --t-faint: #b597a6;
+  --t-inverse: #f0407f;
+  --t-on-inverse: #ffffff;
+  --t-accent: #f0407f;
+  --t-on-accent: #ffffff;
+  --t-accent-soft: #ffe3ee;
+  --t-accent-line: #ffa8c8;
+  --t-accent-strong: #b0124f;
+  --t-accent-fill: linear-gradient(135deg, #f0407f, #ff8a3d);
+  --t-accent-glow: 0 8px 18px -4px rgb(240 64 127 / 0.5);
+  --t-marker-ring: #ffffff;
+  --t-map-filter: sepia(0.18) hue-rotate(295deg) saturate(1.25);
+  --t-ctrl-icon-filter: none;
+  --t-radius-card: 26px;
+  --t-radius-panel: 20px;
+  --t-radius-button: 9999px;
+  --t-radius-control: 9999px;
+  --t-radius-pill: 9999px;
+  --t-font-body: var(--font-rounded), "Hiragino Maru Gothic ProN", var(--t-font-system);
+  --t-font-display: var(--t-font-body);
+}
+
+/* 夜デート・ダーク: ほぼ黒にネオンピンクと紫。地図も暗い色 */
+[data-theme="night"] {
+  color-scheme: dark;
+  --t-canvas: #0b0b14;
+  --t-surface: #151527;
+  --t-sunken: #1e1e36;
+  --t-line: #2a2a46;
+  --t-line-strong: #3d3d60;
+  --t-ink: #f2f0ff;
+  --t-ink-soft: #dcd8f2;
+  --t-ink-mid: #c3bee2;
+  --t-muted: #9d98c4;
+  --t-faint: #716c9a;
+  --t-inverse: #8b5cf6;
+  --t-on-inverse: #ffffff;
+  --t-accent: #ff3d9a;
+  --t-on-accent: #ffffff;
+  --t-accent-soft: #3a1530;
+  --t-accent-line: #a3336f;
+  --t-accent-strong: #ffb3d6;
+  --t-accent-fill: linear-gradient(135deg, #ff3d9a, #8b5cf6);
+  --t-accent-glow: 0 0 22px rgb(255 61 154 / 0.55);
+  --t-marker-ring: #ece9ff;
+  --t-map-filter: none;
+  --t-ctrl-icon-filter: invert(1);
+  --t-radius-card: 18px;
+  --t-radius-panel: 14px;
+  --t-radius-button: 9999px;
+  --t-radius-control: 9999px;
+  --t-radius-pill: 9999px;
+  --t-font-body: var(--font-zenkaku), var(--t-font-system);
+  --t-font-display: var(--t-font-body);
+}
+
+/* おしゃれ雑誌風: 生成りの紙に黒い文字、角ばった形、明朝の見出し */
+[data-theme="magazine"] {
+  color-scheme: light;
+  --t-canvas: #f6f1ea;
+  --t-surface: #fffdf9;
+  --t-sunken: #efe8dd;
+  --t-line: #ddd3c5;
+  --t-line-strong: #b9ab98;
+  --t-ink: #111111;
+  --t-ink-soft: #2b2620;
+  --t-ink-mid: #4a4239;
+  --t-muted: #6b6155;
+  --t-faint: #978c7e;
+  --t-inverse: #111111;
+  --t-on-inverse: #f6f1ea;
+  --t-accent: #b8532f;
+  --t-on-accent: #ffffff;
+  --t-accent-soft: #f6e3db;
+  --t-accent-line: #dca28c;
+  --t-accent-strong: #6e2a14;
+  --t-accent-fill: linear-gradient(#111111, #111111);
+  --t-accent-glow: none;
+  --t-marker-ring: #fffdf9;
+  --t-map-filter: sepia(0.35) saturate(0.75) brightness(1.02);
+  --t-ctrl-icon-filter: none;
+  --t-radius-card: 4px;
+  --t-radius-panel: 2px;
+  --t-radius-button: 2px;
+  --t-radius-control: 2px;
+  --t-radius-pill: 2px;
+  --t-font-body: var(--t-font-system);
+  --t-font-display: var(--font-mincho), "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+
+/* テーマから使う、端末に入っている文字（どのテーマでも最後の予備になる） */
+:root {
+  --t-font-system: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI",
+    "Meiryo", sans-serif;
 }
 
 /* テーマの値を Tailwind のクラス名として使えるようにする（例: bg-surface, text-muted, rounded-card） */
@@ -60,8 +179,19 @@
   --radius-card: var(--t-radius-card);
   --radius-panel: var(--t-radius-panel);
   --radius-button: var(--t-radius-button);
+  --radius-control: var(--t-radius-control);
   --radius-pill: var(--t-radius-pill);
   --font-display: var(--t-font-display);
+}
+
+/* 大きなボタン（スワイプする・♥）の塗り。テーマによってグラデーションになる。
+   使えなくしたとき（disabled）は disabled:bg-none disabled:bg-line-strong で模様を消す */
+@utility bg-accent-fill {
+  background-color: var(--t-accent);
+  background-image: var(--t-accent-fill);
+}
+@utility shadow-accent {
+  box-shadow: var(--t-accent-glow);
 }
 
 /* 地図を画面いっぱいに広げるため、土台の高さを100%にしておく */
@@ -73,9 +203,8 @@ body {
 body {
   background: var(--t-canvas);
   color: var(--t-ink);
-  /* 日本語がきれいに出るフォント指定（上から順に、見つかったものを使う） */
-  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans",
-    "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif;
+  /* 本文の文字はテーマで決まる。日本語がきれいに出るよう、見つからないときの予備も並べてある */
+  font-family: var(--t-font-body);
 }
 
 /* 地図の吹き出しの「×」ボタン。標準のままだと小さく、スマホの指で押しにくいため大きくする */
@@ -93,27 +222,52 @@ body {
 }
 /* 吹き出しの面と、下に出る三角（tip）の色もテーマに合わせる */
 .maplibregl-popup .maplibregl-popup-content {
+  border-radius: var(--t-radius-panel);
   background: var(--t-surface);
   color: var(--t-ink);
 }
 .maplibregl-popup .maplibregl-popup-close-button {
   color: var(--t-muted);
 }
-.maplibregl-popup-anchor-top .maplibregl-popup-tip,
-.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+.maplibregl-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
   border-bottom-color: var(--t-surface);
 }
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
-.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+.maplibregl-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
   border-top-color: var(--t-surface);
 }
-.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+.maplibregl-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
   border-right-color: var(--t-surface);
 }
-.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+.maplibregl-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
   border-left-color: var(--t-surface);
+}
+
+/* 地図そのものの色味（テーマごとに少しだけ染める）。目印は別の部品なので染まらない */
+.maplibregl-map .maplibregl-canvas {
+  filter: var(--t-map-filter);
+}
+/* 地図の＋−ボタンと出典表示もテーマの色に合わせる */
+.maplibregl-map .maplibregl-ctrl-group {
+  background: var(--t-surface);
+}
+.maplibregl-map .maplibregl-ctrl-group button + button {
+  border-top-color: var(--t-line);
+}
+.maplibregl-map .maplibregl-ctrl-icon,
+.maplibregl-map .maplibregl-ctrl-attrib-button {
+  filter: var(--t-ctrl-icon-filter);
+}
+.maplibregl-map .maplibregl-ctrl-attrib,
+.maplibregl-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: color-mix(in srgb, var(--t-surface) 85%, transparent);
+  color: var(--t-ink-soft);
+}
+.maplibregl-map .maplibregl-ctrl-attrib a {
+  color: inherit;
 }
 
 /* ------------------------------------------------------------

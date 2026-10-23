@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import SpotLocationMapClient from '@/components/map/SpotLocationMapClient'
 import SnsEmbed from '@/components/spot/SnsEmbed'
 import { StatusMessage } from '@/components/ui/StatusMessage'
+import { ThemeButton } from '@/components/ui/ThemePicker'
 import { mapHrefFromMemory } from '@/components/spot/mapQueryMemory'
 import { useSavedSpots } from '@/components/spot/useSavedSpots'
 import { fetchSpot } from '@/lib/queries/spots'
@@ -36,7 +37,7 @@ function ExternalButton({ href, children }: { href: string; children: ReactNode 
       target="_blank"
       // noreferrer: 移動先のサイトに「どこから来たか」を伝えない＆元のタブを操作させない安全策
       rel="noreferrer"
-      className="inline-flex items-center rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:bg-sunken"
+      className="inline-flex items-center rounded-control border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink-soft transition-colors hover:bg-sunken"
     >
       {children} ↗
     </a>
@@ -100,10 +101,11 @@ export default function SpotDetailScreen() {
   return (
     <div className="h-full overflow-y-auto bg-canvas">
       <header className="sticky top-0 z-20 border-b border-line bg-surface px-4 py-3">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
           <Link href="/" onClick={backToMap} className="text-xs text-muted hover:text-ink">
             ← 地図に戻る
           </Link>
+          <ThemeButton />
         </div>
       </header>
 
@@ -179,12 +181,12 @@ export default function SpotDetailScreen() {
             </div>
 
             {spot.memo && (
-              <p className="rounded-lg border border-line bg-surface px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-ink">
+              <p className="rounded-panel border border-line bg-surface px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-ink">
                 {spot.memo}
               </p>
             )}
 
-            <dl className="rounded-lg border border-line bg-surface px-4 py-1">
+            <dl className="rounded-panel border border-line bg-surface px-4 py-1">
               <InfoRow label="予算">{budgetLabel(spot.budget_band)}（ひとりあたり）</InfoRow>
               <InfoRow label="時間帯">{timeOfDayLabel(spot.time_of_day)}</InfoRow>
               <InfoRow label="住所">{spot.address}</InfoRow>

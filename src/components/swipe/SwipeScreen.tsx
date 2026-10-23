@@ -8,6 +8,7 @@ import FilterPanel from '@/components/spot/FilterPanel'
 import { useSavedSpots } from '@/components/spot/useSavedSpots'
 import SwipeCard, { type SwipeDirection } from '@/components/swipe/SwipeCard'
 import { HeaderNav, TabBar } from '@/components/ui/AppNav'
+import { ThemeButton } from '@/components/ui/ThemePicker'
 import { StatusMessage } from '@/components/ui/StatusMessage'
 import { fetchPublishedSpots } from '@/lib/queries/spots'
 import {
@@ -149,12 +150,13 @@ export default function SwipeScreen() {
             <button
               type="button"
               onClick={() => setDeck(null)}
-              className="rounded-md border border-line px-2.5 py-1.5 text-xs text-ink-mid transition-colors hover:bg-sunken"
+              className="rounded-control border border-line px-2.5 py-1.5 text-xs text-ink-mid transition-colors hover:bg-sunken"
             >
               条件を変える
             </button>
           )}
           <HeaderNav />
+          <ThemeButton />
         </div>
       </header>
 
@@ -191,7 +193,7 @@ export default function SwipeScreen() {
                   type="button"
                   onClick={start}
                   disabled={candidates.length === 0}
-                  className="w-full rounded-button bg-accent px-4 py-3 text-sm font-bold text-on-accent transition-opacity hover:opacity-90 disabled:bg-line-strong"
+                  className="bg-accent-fill shadow-accent w-full rounded-button px-4 py-3 text-sm font-bold text-on-accent transition-opacity hover:opacity-90 disabled:bg-none disabled:bg-line-strong disabled:shadow-none"
                 >
                   {candidates.length > 0
                     ? `${candidates.length}件をスワイプする`
@@ -255,7 +257,7 @@ export default function SwipeScreen() {
                 type="button"
                 onClick={() => swipe(1)}
                 aria-label="保存"
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-2xl text-on-accent shadow-md active:scale-95"
+                className="flex h-16 w-16 items-center justify-center bg-accent-fill shadow-accent rounded-full text-2xl text-on-accent active:scale-95"
               >
                 ♥
               </button>
@@ -275,7 +277,7 @@ export default function SwipeScreen() {
             </p>
             <Link
               href="/saved"
-              className="mt-2 w-full rounded-button bg-accent px-4 py-3 text-sm font-bold text-on-accent"
+              className="bg-accent-fill shadow-accent mt-2 w-full rounded-button px-4 py-3 text-sm font-bold text-on-accent"
             >
               保存した一覧を見る
             </Link>

@@ -1,11 +1,18 @@
 /**
  * 地図の基本設定をここに集約。
- * 地図の配信元を変えたくなったら MAP_STYLE_URL の1行だけ差し替えればOKです。
+ * 地図の配信元を変えたくなったら MAP_STYLES の URL を差し替えればOKです。
  */
 
 // OpenFreeMap: 無料・APIキー不要の地図タイル配信サービス。
-// 'liberty' は標準的な見た目。'positron' は白っぽい淡い見た目（ピンが目立つ）。
-export const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
+// どのテーマでどれを使うかは src/lib/theme/themes.ts で決める。
+export const MAP_STYLES = {
+  liberty: 'https://tiles.openfreemap.org/styles/liberty', // 標準的な色つきの地図
+  positron: 'https://tiles.openfreemap.org/styles/positron', // 白っぽく淡い地図（目印が目立つ）
+  dark: 'https://tiles.openfreemap.org/styles/dark', // 暗い地図
+} as const
+
+// テーマに関係なく使う標準の地図（管理画面など）
+export const MAP_STYLE_URL = MAP_STYLES.liberty
 
 // 地図を開いたときの中心。東京駅のあたり。[経度, 緯度] の順番（緯度が先ではない点に注意）
 export const TOKYO_CENTER: [number, number] = [139.7671, 35.6812]

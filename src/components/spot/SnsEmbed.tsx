@@ -21,7 +21,7 @@ export default function SnsEmbed({ url }: { url: string }) {
       allow="encrypted-media; fullscreen; picture-in-picture"
       allowFullScreen
       // TikTok は縦長の動画、Instagram は写真＋投稿者名＋説明文が入る高さにする
-      className={`w-full max-w-[340px] rounded-lg border border-line bg-surface ${
+      className={`w-full max-w-[340px] rounded-panel border border-line bg-surface ${
         isTiktok ? 'h-[600px]' : 'h-[640px]'
       }`}
     />

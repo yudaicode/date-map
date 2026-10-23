@@ -7,6 +7,7 @@ import SpotThumb from '@/components/spot/SpotThumb'
 import { useSavedSpots } from '@/components/spot/useSavedSpots'
 import { saveMapQuery } from '@/components/spot/mapQueryMemory'
 import { HeaderNav, TabBar } from '@/components/ui/AppNav'
+import { ThemeButton } from '@/components/ui/ThemePicker'
 import { StatusMessage } from '@/components/ui/StatusMessage'
 import { fetchPublishedSpots } from '@/lib/queries/spots'
 import { genre } from '@/constants/genres'
@@ -58,7 +59,10 @@ export default function SavedScreen() {
             {status === 'ready' ? `${savedSpots.length}件` : '読み込み中…'}
           </p>
         </div>
-        <HeaderNav />
+        <div className="flex shrink-0 items-center gap-2">
+          <HeaderNav />
+          <ThemeButton />
+        </div>
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto">
@@ -76,7 +80,7 @@ export default function SavedScreen() {
               </p>
               <Link
                 href="/swipe"
-                className="mt-2 rounded-button bg-accent px-5 py-3 text-sm font-bold text-on-accent"
+                className="bg-accent-fill shadow-accent mt-2 rounded-button px-5 py-3 text-sm font-bold text-on-accent"
               >
                 スワイプで探す
               </Link>
@@ -107,7 +111,7 @@ export default function SavedScreen() {
                       >
                         <SpotThumb
                           spot={spot}
-                          className="h-20 w-20 shrink-0 rounded-lg"
+                          className="h-20 w-20 shrink-0 rounded-panel"
                           emojiClassName="text-3xl"
                         />
                         <span className="min-w-0 flex-1">

@@ -14,7 +14,7 @@ export function StatusMessage({
       : 'border-line bg-surface text-ink-soft'
 
   return (
-    <div className={`mx-auto max-w-md rounded-lg border px-4 py-3 text-sm shadow-sm ${color}`}>
+    <div className={`mx-auto max-w-md rounded-panel border px-4 py-3 text-sm shadow-sm ${color}`}>
       <p className="font-semibold">{title}</p>
       {detail && <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed">{detail}</p>}
     </div>

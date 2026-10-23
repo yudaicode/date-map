@@ -63,7 +63,7 @@ export function HeaderNav() {
           key={tab.href}
           href={tab.href}
           aria-current={tab.active ? 'page' : undefined}
-          className={`rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+          className={`rounded-control px-2.5 py-1.5 text-xs transition-colors ${
             tab.active ? 'bg-inverse font-semibold text-on-inverse' : 'text-ink-mid hover:bg-sunken'
           }`}
         >
