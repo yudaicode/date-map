@@ -18,7 +18,10 @@ export type Theme = {
   label: string
   /** 着せ替えの画面に出す、ひとことの説明 */
   description: string
-  /** 地図の見た目（OpenFreeMap のスタイルURL）。暗いテーマなら暗い地図にする */
+  /**
+   * 地図の見た目（OpenFreeMap のスタイルURL）。
+   * 地図の色を変えると見にくくなるため、今はどのテーマも標準（liberty）にしている（2026-10-23 オーナー決定）
+   */
   mapStyleUrl: string
 }
 
@@ -28,19 +31,19 @@ export const THEMES = [
     id: 'pop',
     label: '甘めポップ',
     description: 'ピンク〜オレンジ、まんまるで明るい',
-    mapStyleUrl: MAP_STYLES.positron,
+    mapStyleUrl: MAP_STYLES.liberty,
   },
   {
     id: 'night',
     label: '夜デート',
     description: '黒にネオン。夜景・ディナーが映える',
-    mapStyleUrl: MAP_STYLES.dark,
+    mapStyleUrl: MAP_STYLES.liberty,
   },
   {
     id: 'magazine',
     label: '雑誌風',
     description: '生成りの紙に明朝。落ち着いた大人っぽさ',
-    mapStyleUrl: MAP_STYLES.positron,
+    mapStyleUrl: MAP_STYLES.liberty,
   },
   {
     id: 'standard',

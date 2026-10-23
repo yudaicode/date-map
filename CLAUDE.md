@@ -452,16 +452,16 @@ SNSより**速くて迷わない**こと。場所が地図で一発、条件（�
   `standard` シンプル（元の見た目）。値は `globals.css`、名前・説明・地図は `lib/theme/themes.ts`
 - 文字: `next/font/google` で M PLUS Rounded 1c（ポップ）/ Zen Kaku Gothic New（夜）/ Shippori Mincho（雑誌の見出し）。
   `preload: false` で先読みしない＝**選んでいないテーマの文字はダウンロードされない**
-- 地図: ポップ・雑誌は positron（淡い地図）を CSS の filter で少し染める（`--t-map-filter`）、夜は dark、
-  シンプルは liberty。地図の URL は `lib/map/config.ts` の `MAP_STYLES`
-  - ＋−ボタン・出典表示・吹き出しの三角もテーマの色に合わせた（MapLibre の CSS に勝つよう `.maplibregl-map` を前に付けている）
+- 地図: **どのテーマでも地図の配色は標準（liberty）のまま変えない**（暗い地図・色味の調整は見にくくなるため。
+  2026-10-23 オーナー指示）。テーマごとに地図を替える仕組み（`themes.ts` の `mapStyleUrl` と `setStyle`）は残してある
+  - ＋−ボタン・出典表示・吹き出しはテーマの色に合わせる（MapLibre の CSS に勝つよう `.maplibregl-map` を前に付けている）
 - 大きなボタン（スワイプする・♥）は `bg-accent-fill shadow-accent`（ポップ・夜はグラデーション＋光、雑誌は黒）。
   ヘッダーの小さなボタンは `rounded-control`
 - 「🎨 着せ替え」ボタン（`components/ui/ThemePicker.tsx`）を地図・スワイプ・保存・詳細のヘッダーに置いた。
   押すと下からシートが出て、各テーマの小さな見本（その部分だけ `data-theme` を付け替えて描く）から選べる
   - シートは `createPortal` で body 直下に出す（ヘッダーの中だと下のタブの裏に隠れるため）
 - 検証: tsc / lint / build。ヘッドレスChromeで初回=ポップ / 4テーマ×地図（ズーム・吹き出し）・絞り込み・スワイプ・保存 /
-  地図を開いたまま切り替え→地図が暗くなり日本語ラベルも残る・目印の数そのまま / 選んだテーマが記録される。エラー0
+  地図を開いたまま切り替え→目印の数そのまま / 選んだテーマが記録される。エラー0
 
 ### 段階D の既知の留保事項
 - 埋め込み（TikTok / Instagram）の中身は各サービスの見た目のまま（夜テーマでも白いことがある）

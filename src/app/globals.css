@@ -37,7 +37,6 @@
   --t-accent-fill: none; /* 大きなボタンの模様（グラデーション）。none なら主役の色のベタ塗り */
   --t-accent-glow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* 大きなボタンの影 */
   --t-marker-ring: #ffffff; /* 地図の目印のふち */
-  --t-map-filter: none; /* 地図の色味の調整（CSS の filter） */
   --t-ctrl-icon-filter: none; /* 地図の＋−ボタンの絵の色の調整（暗いテーマで白くする） */
   --t-radius-card: 16px; /* スワイプのカードの角の丸み */
   --t-radius-panel: 12px; /* 一覧の行・写真の角の丸み */
@@ -72,7 +71,6 @@
   --t-accent-fill: linear-gradient(135deg, #f0407f, #ff8a3d);
   --t-accent-glow: 0 8px 18px -4px rgb(240 64 127 / 0.5);
   --t-marker-ring: #ffffff;
-  --t-map-filter: sepia(0.18) hue-rotate(295deg) saturate(1.25);
   --t-ctrl-icon-filter: none;
   --t-radius-card: 26px;
   --t-radius-panel: 20px;
@@ -106,7 +104,6 @@
   --t-accent-fill: linear-gradient(135deg, #ff3d9a, #8b5cf6);
   --t-accent-glow: 0 0 22px rgb(255 61 154 / 0.55);
   --t-marker-ring: #ece9ff;
-  --t-map-filter: none;
   --t-ctrl-icon-filter: invert(1);
   --t-radius-card: 18px;
   --t-radius-panel: 14px;
@@ -140,7 +137,6 @@
   --t-accent-fill: linear-gradient(#111111, #111111);
   --t-accent-glow: none;
   --t-marker-ring: #fffdf9;
-  --t-map-filter: sepia(0.35) saturate(0.75) brightness(1.02);
   --t-ctrl-icon-filter: none;
   --t-radius-card: 4px;
   --t-radius-panel: 2px;
@@ -246,10 +242,6 @@ body {
   border-left-color: var(--t-surface);
 }
 
-/* 地図そのものの色味（テーマごとに少しだけ染める）。目印は別の部品なので染まらない */
-.maplibregl-map .maplibregl-canvas {
-  filter: var(--t-map-filter);
-}
 /* 地図の＋−ボタンと出典表示もテーマの色に合わせる */
 .maplibregl-map .maplibregl-ctrl-group {
   background: var(--t-surface);
