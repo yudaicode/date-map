@@ -134,11 +134,11 @@ export default function SwipeScreen() {
   const likedCount = history.filter((h) => h.dir === 1).length
 
   return (
-    <div className="flex h-full flex-col bg-slate-50">
-      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+    <div className="flex h-full flex-col bg-canvas">
+      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3">
         <div className="min-w-0">
-          <h1 className="text-base font-bold tracking-tight">スワイプで選ぶ</h1>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <h1 className="font-display text-base font-bold tracking-tight">スワイプで選ぶ</h1>
+          <p className="mt-0.5 text-xs text-muted">
             {deck && !finished
               ? `${index + 1} / ${deck.length}枚目`
               : '行き先が決まっていないデートに'}
@@ -149,7 +149,7 @@ export default function SwipeScreen() {
             <button
               type="button"
               onClick={() => setDeck(null)}
-              className="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-50"
+              className="rounded-md border border-line px-2.5 py-1.5 text-xs text-ink-mid transition-colors hover:bg-sunken"
             >
               条件を変える
             </button>
@@ -160,7 +160,7 @@ export default function SwipeScreen() {
 
       <main className="relative min-h-0 flex-1">
         {status === 'loading' && (
-          <p className="p-6 text-center text-sm text-slate-500">読み込み中…</p>
+          <p className="p-6 text-center text-sm text-muted">読み込み中…</p>
         )}
         {status === 'error' && (
           <div className="p-4">
@@ -174,7 +174,7 @@ export default function SwipeScreen() {
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="mx-auto max-w-xl px-4 py-5">
                 <p className="text-sm font-bold">どんなデートにする？</p>
-                <p className="mt-1 mb-5 text-xs text-slate-500">
+                <p className="mt-1 mb-5 text-xs text-muted">
                   条件を選んでスワイプ開始。気になったら右、違ったら左。
                   何も選ばなければ全部のスポットから出します。
                 </p>
@@ -185,13 +185,13 @@ export default function SwipeScreen() {
                 />
               </div>
             </div>
-            <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3">
+            <div className="shrink-0 border-t border-line bg-surface px-4 py-3">
               <div className="mx-auto max-w-xl">
                 <button
                   type="button"
                   onClick={start}
                   disabled={candidates.length === 0}
-                  className="w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:bg-slate-300"
+                  className="w-full rounded-button bg-accent px-4 py-3 text-sm font-bold text-on-accent transition-opacity hover:opacity-90 disabled:bg-line-strong"
                 >
                   {candidates.length > 0
                     ? `${candidates.length}件をスワイプする`
@@ -200,7 +200,7 @@ export default function SwipeScreen() {
                       : '条件に合うスポットがありません'}
                 </button>
                 {alreadySavedCount > 0 && (
-                  <p className="mt-1.5 text-center text-[11px] text-slate-500">
+                  <p className="mt-1.5 text-center text-[11px] text-muted">
                     保存済みの{alreadySavedCount}件は除いています
                   </p>
                 )}
@@ -229,7 +229,7 @@ export default function SwipeScreen() {
                 ))}
             </div>
             {index === 0 && (
-              <p className="mt-2 text-center text-[11px] text-slate-500">
+              <p className="mt-2 text-center text-[11px] text-muted">
                 下の情報の部分を左右にスワイプ、またはボタンで選べます
               </p>
             )}
@@ -239,7 +239,7 @@ export default function SwipeScreen() {
                 onClick={undo}
                 disabled={history.length === 0}
                 aria-label="ひとつ戻す"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-lg text-amber-600 shadow-sm disabled:opacity-30"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-lg text-amber-600 shadow-sm disabled:opacity-30"
               >
                 ↺
               </button>
@@ -247,7 +247,7 @@ export default function SwipeScreen() {
                 type="button"
                 onClick={() => swipe(-1)}
                 aria-label="パス"
-                className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-200 bg-white text-2xl text-slate-500 shadow-md active:scale-95"
+                className="flex h-16 w-16 items-center justify-center rounded-full border border-line bg-surface text-2xl text-muted shadow-md active:scale-95"
               >
                 ✕
               </button>
@@ -255,7 +255,7 @@ export default function SwipeScreen() {
                 type="button"
                 onClick={() => swipe(1)}
                 aria-label="保存"
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-600 text-2xl text-white shadow-md active:scale-95"
+                className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-2xl text-on-accent shadow-md active:scale-95"
               >
                 ♥
               </button>
@@ -270,25 +270,25 @@ export default function SwipeScreen() {
           <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-3 px-6 text-center">
             <p className="text-4xl">🎉</p>
             <p className="text-base font-bold">ぜんぶ見ました！</p>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-mid">
               今回は{likedCount}件を保存しました。
             </p>
             <Link
               href="/saved"
-              className="mt-2 w-full rounded-xl bg-rose-600 px-4 py-3 text-sm font-bold text-white"
+              className="mt-2 w-full rounded-button bg-accent px-4 py-3 text-sm font-bold text-on-accent"
             >
               保存した一覧を見る
             </Link>
             <Link
               href="/?saved=1"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+              className="w-full rounded-button border border-line-strong bg-surface px-4 py-3 text-sm font-semibold text-ink-soft"
             >
               保存したスポットを地図で見る
             </Link>
             <button
               type="button"
               onClick={() => setDeck(null)}
-              className="text-xs text-slate-500 underline"
+              className="text-xs text-muted underline"
             >
               条件を変えてもう一度
             </button>

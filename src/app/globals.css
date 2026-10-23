@@ -1,13 +1,67 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+/* ------------------------------------------------------------
+   着せ替え（テーマ）の土台
+   画面の色・角の丸み・見出しの文字は、すべてここの「--t-〇〇」を通して決める。
+   テーマは <html data-theme="〇〇"> で切り替わる（src/lib/theme/ が付け外しする）。
+
+   【新しいテーマを足すとき】
+   1. 下の [data-theme="standard"] をまるごとコピーし、名前と値を書き換える
+   2. src/lib/theme/themes.ts の THEMES に1行足す（地図の見た目もそこで決める）
+   画面の部品には色を直接書かず、bg-surface / text-muted などのテーマの名前を使うこと
+   ------------------------------------------------------------ */
+:root,
+[data-theme="standard"] {
+  color-scheme: light;
+  --t-canvas: #f8fafc; /* 画面の地の色 */
+  --t-surface: #ffffff; /* カード・ヘッダーなどの面 */
+  --t-sunken: #f1f5f9; /* 一段へこんだ面（読み込み中の枠など） */
+  --t-line: #e2e8f0; /* 枠線 */
+  --t-line-strong: #cbd5e1; /* 濃い枠線 */
+  --t-ink: #0f172a; /* 見出し・本文 */
+  --t-ink-soft: #334155; /* 少し薄い本文 */
+  --t-ink-mid: #475569;
+  --t-muted: #64748b; /* 補足の文字 */
+  --t-faint: #94a3b8; /* さらに控えめな文字 */
+  --t-inverse: #0f172a; /* 選択中のボタンなど、反転した面 */
+  --t-on-inverse: #ffffff; /* 反転した面の上の文字 */
+  --t-accent: #e11d48; /* 主役の色（保存・♥・スワイプする） */
+  --t-on-accent: #ffffff; /* 主役の色の上の文字 */
+  --t-accent-soft: #fff1f2; /* 主役の色の薄い面 */
+  --t-accent-line: #fda4af; /* 主役の色の枠線 */
+  --t-accent-strong: #881337; /* 主役の色の濃い文字 */
+  --t-marker-ring: #ffffff; /* 地図の目印の白いふち */
+  --t-radius-card: 16px; /* スワイプのカードの角の丸み */
+  --t-radius-panel: 12px; /* 一覧の行・写真の角の丸み */
+  --t-radius-button: 12px; /* 大きなボタンの角の丸み */
+  --t-radius-pill: 9999px; /* 選択ボタン（チップ）の角の丸み */
+  --t-font-display: inherit; /* 見出しの文字（標準は本文と同じ） */
 }
 
+/* テーマの値を Tailwind のクラス名として使えるようにする（例: bg-surface, text-muted, rounded-card） */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-canvas: var(--t-canvas);
+  --color-surface: var(--t-surface);
+  --color-sunken: var(--t-sunken);
+  --color-line: var(--t-line);
+  --color-line-strong: var(--t-line-strong);
+  --color-ink: var(--t-ink);
+  --color-ink-soft: var(--t-ink-soft);
+  --color-ink-mid: var(--t-ink-mid);
+  --color-muted: var(--t-muted);
+  --color-faint: var(--t-faint);
+  --color-inverse: var(--t-inverse);
+  --color-on-inverse: var(--t-on-inverse);
+  --color-accent: var(--t-accent);
+  --color-on-accent: var(--t-on-accent);
+  --color-accent-soft: var(--t-accent-soft);
+  --color-accent-line: var(--t-accent-line);
+  --color-accent-strong: var(--t-accent-strong);
+  --radius-card: var(--t-radius-card);
+  --radius-panel: var(--t-radius-panel);
+  --radius-button: var(--t-radius-button);
+  --radius-pill: var(--t-radius-pill);
+  --font-display: var(--t-font-display);
 }
 
 /* 地図を画面いっぱいに広げるため、土台の高さを100%にしておく */
@@ -17,8 +71,8 @@ body {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--t-canvas);
+  color: var(--t-ink);
   /* 日本語がきれいに出るフォント指定（上から順に、見つかったものを使う） */
   font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans",
     "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif;
@@ -36,6 +90,30 @@ body {
 /* 吹き出しは、どの目印（保存済み・指を乗せた目印は少し上の段にいる）よりも手前に出す */
 .maplibregl-popup {
   z-index: 10;
+}
+/* 吹き出しの面と、下に出る三角（tip）の色もテーマに合わせる */
+.maplibregl-popup .maplibregl-popup-content {
+  background: var(--t-surface);
+  color: var(--t-ink);
+}
+.maplibregl-popup .maplibregl-popup-close-button {
+  color: var(--t-muted);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--t-surface);
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--t-surface);
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--t-surface);
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--t-surface);
 }
 
 /* ------------------------------------------------------------
@@ -60,7 +138,7 @@ body {
   width: 34px;
   height: 34px;
   margin-bottom: 8px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--t-marker-ring);
   border-radius: 9999px;
   background: var(--pin-color);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
@@ -78,7 +156,7 @@ body {
   transform: translateX(-50%);
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 8px solid #ffffff;
+  border-top: 8px solid var(--t-marker-ring);
 }
 .spot-marker__pin::after {
   bottom: -10px;
@@ -100,7 +178,7 @@ body {
   width: 64px;
   height: 64px;
   overflow: hidden;
-  border: 3px solid #ffffff;
+  border: 3px solid var(--t-marker-ring);
   border-radius: 18px;
   /* 写真が無いときの背景（ジャンルの色のグラデーション） */
   background: linear-gradient(
@@ -128,8 +206,8 @@ body {
   padding: 2px 8px;
   overflow: hidden;
   border-radius: 9999px;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--t-surface);
+  color: var(--t-ink);
   font-size: 10px;
   font-weight: 700;
   line-height: 1.4;
@@ -153,7 +231,7 @@ body {
   z-index: 2;
 }
 .spot-marker.is-saved .spot-marker__photo {
-  border-color: #e11d48;
+  border-color: var(--t-accent);
 }
 .spot-marker__heart {
   display: none;
@@ -163,10 +241,10 @@ body {
   left: calc(50% + 22px);
   width: 22px;
   height: 22px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--t-marker-ring);
   border-radius: 9999px;
-  background: #e11d48;
-  color: #ffffff;
+  background: var(--t-accent);
+  color: var(--t-on-accent);
   font-size: 11px;
   line-height: 18px;
   text-align: center;

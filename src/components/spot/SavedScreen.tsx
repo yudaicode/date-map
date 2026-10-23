@@ -50,11 +50,11 @@ export default function SavedScreen() {
   }, [entries, spots])
 
   return (
-    <div className="flex h-full flex-col bg-slate-50">
-      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+    <div className="flex h-full flex-col bg-canvas">
+      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3">
         <div className="min-w-0">
-          <h1 className="text-base font-bold tracking-tight">保存したスポット</h1>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <h1 className="font-display text-base font-bold tracking-tight">保存したスポット</h1>
+          <p className="mt-0.5 text-xs text-muted">
             {status === 'ready' ? `${savedSpots.length}件` : '読み込み中…'}
           </p>
         </div>
@@ -71,12 +71,12 @@ export default function SavedScreen() {
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <p className="text-4xl">♡</p>
               <p className="text-sm font-bold">まだ保存したスポットはありません</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 スワイプで右に送ったスポットや、♡ を押したスポットがここに並びます。
               </p>
               <Link
                 href="/swipe"
-                className="mt-2 rounded-xl bg-rose-600 px-5 py-3 text-sm font-bold text-white"
+                className="mt-2 rounded-button bg-accent px-5 py-3 text-sm font-bold text-on-accent"
               >
                 スワイプで探す
               </Link>
@@ -87,7 +87,7 @@ export default function SavedScreen() {
             <>
               <Link
                 href="/?saved=1"
-                className="mb-4 flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                className="mb-4 flex items-center justify-center rounded-button border border-line-strong bg-surface px-4 py-3 text-sm font-semibold text-ink-soft"
               >
                 🗺️ 保存したスポットを地図で見る
               </Link>
@@ -97,7 +97,7 @@ export default function SavedScreen() {
                   return (
                     <li
                       key={spot.id}
-                      className="flex items-stretch gap-3 rounded-xl border border-slate-200 bg-white p-2.5"
+                      className="flex items-stretch gap-3 rounded-panel border border-line bg-surface p-2.5"
                     >
                       <Link
                         href={`/spots/${spot.id}`}
@@ -112,10 +112,10 @@ export default function SavedScreen() {
                         />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-bold">{spot.name}</span>
-                          <span className="mt-0.5 block text-xs text-slate-500">
+                          <span className="mt-0.5 block text-xs text-muted">
                             {g?.emoji} {g?.label} ・ {wardLabel(spot.ward)}
                           </span>
-                          <span className="block text-xs text-slate-500">
+                          <span className="block text-xs text-muted">
                             {budgetLabel(spot.budget_band)} ・ {timeOfDayLabel(spot.time_of_day)}
                           </span>
                         </span>
@@ -124,7 +124,7 @@ export default function SavedScreen() {
                         type="button"
                         onClick={() => toggleSaved(spot.id)}
                         aria-label={`「${spot.name}」の保存をやめる`}
-                        className="shrink-0 self-center rounded-full px-3 py-2 text-xl text-rose-600"
+                        className="shrink-0 self-center rounded-full px-3 py-2 text-xl text-accent"
                       >
                         ♥
                       </button>
@@ -132,7 +132,7 @@ export default function SavedScreen() {
                   )
                 })}
               </ul>
-              <p className="mt-4 text-center text-[11px] text-slate-400">
+              <p className="mt-4 text-center text-[11px] text-faint">
                 保存はこの端末のブラウザの中だけに記録されます（機種変更や履歴の削除で消えます）
               </p>
             </>

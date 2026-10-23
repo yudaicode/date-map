@@ -9,7 +9,7 @@ import SpotDetailScreen from '@/components/spot/SpotDetailScreen'
 export default function SpotDetailPage() {
   return (
     <Suspense
-      fallback={<p className="p-6 text-sm text-slate-500">読み込み中…</p>}
+      fallback={<p className="p-6 text-sm text-muted">読み込み中…</p>}
     >
       <SpotDetailScreen />
     </Suspense>

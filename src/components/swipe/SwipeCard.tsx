@@ -86,7 +86,7 @@ export default function SwipeCard({ spot, isTop, exitDir, onSwipe }: Props) {
 
   return (
     <div
-      className="absolute inset-0 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl select-none"
+      className="absolute inset-0 flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-xl select-none"
       style={{
         transform: isTop
           ? `translateX(${x}) rotate(${rotate}deg)`
@@ -122,19 +122,19 @@ export default function SwipeCard({ spot, isTop, exitDir, onSwipe }: Props) {
             title={isTiktok ? 'TikTok の投稿' : 'Instagram の投稿'}
             allow="encrypted-media; fullscreen; picture-in-picture"
             allowFullScreen
-            className="absolute inset-0 h-full w-full bg-white"
+            className="absolute inset-0 h-full w-full bg-surface"
           />
         )}
 
         {/* 動かしている向きの文字 */}
         <span
-          className="pointer-events-none absolute top-5 left-4 -rotate-12 rounded-lg border-4 border-emerald-500 bg-white/90 px-3 py-1 text-2xl font-black text-emerald-600"
+          className="pointer-events-none absolute top-5 left-4 -rotate-12 rounded-lg border-4 border-emerald-500 bg-surface/90 px-3 py-1 text-2xl font-black text-emerald-600"
           style={{ opacity: likeOpacity }}
         >
           保存 ♥
         </span>
         <span
-          className="pointer-events-none absolute top-5 right-4 rotate-12 rounded-lg border-4 border-slate-500 bg-white/90 px-3 py-1 text-2xl font-black text-slate-600"
+          className="pointer-events-none absolute top-5 right-4 rotate-12 rounded-lg border-4 border-muted bg-surface/90 px-3 py-1 text-2xl font-black text-ink-mid"
           style={{ opacity: passOpacity }}
         >
           パス
@@ -143,7 +143,7 @@ export default function SwipeCard({ spot, isTop, exitDir, onSwipe }: Props) {
 
       {/* 下半分: スポットの情報。ここを左右にスワイプする */}
       <div
-        className={`shrink-0 cursor-grab border-t border-slate-100 px-4 pt-3 pb-4 active:cursor-grabbing ${
+        className={`shrink-0 cursor-grab border-t border-sunken px-4 pt-3 pb-4 active:cursor-grabbing ${
           expanded ? 'max-h-[60%] overflow-y-auto' : ''
         }`}
         style={{ touchAction: 'none' }} // 指の動きをブラウザのスクロールに使わせず、スワイプに使う
@@ -159,33 +159,33 @@ export default function SwipeCard({ spot, isTop, exitDir, onSwipe }: Props) {
           >
             {g?.emoji} {g?.label}
           </span>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
+          <span className="rounded-full bg-sunken px-2 py-0.5 text-ink-soft">
             {wardLabel(spot.ward)}
           </span>
-          <span className="text-slate-500">
+          <span className="text-muted">
             {budgetLabel(spot.budget_band)} ・ {timeOfDayLabel(spot.time_of_day)}
           </span>
         </div>
-        <h2 className="mt-1.5 text-lg leading-snug font-bold">{spot.name}</h2>
+        <h2 className="mt-1.5 font-display text-lg leading-snug font-bold">{spot.name}</h2>
         {spot.scenes.length > 0 && (
-          <p className="mt-0.5 text-xs text-slate-600">
+          <p className="mt-0.5 text-xs text-ink-mid">
             {spot.scenes.map((s) => `#${sceneLabel(s)}`).join(' ')}
           </p>
         )}
         {spot.memo && (
           <p
-            className={`mt-1.5 text-[13px] leading-relaxed text-slate-700 ${
+            className={`mt-1.5 text-[13px] leading-relaxed text-ink-soft ${
               expanded ? 'whitespace-pre-wrap' : 'line-clamp-2'
             }`}
           >
             {spot.memo}
           </p>
         )}
-        {expanded && <p className="mt-1.5 text-xs text-slate-500">📍 {spot.address}</p>}
+        {expanded && <p className="mt-1.5 text-xs text-muted">📍 {spot.address}</p>}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-1 text-xs font-semibold text-slate-500 underline"
+          className="mt-1 text-xs font-semibold text-muted underline"
         >
           {expanded ? '閉じる' : 'もっと見る'}
         </button>

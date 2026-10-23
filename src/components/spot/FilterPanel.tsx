@@ -39,15 +39,15 @@ function Chip({
       aria-pressed={selected} // 読み上げ機能に「選択中かどうか」を伝える
       onClick={onClick}
       // スマホ幅では指で押しやすいよう高さを約40pxに、広い画面では小さめにする
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2.5 text-[13px] transition-colors md:px-3 md:py-1.5 md:text-xs ${
+      className={`inline-flex items-center gap-1.5 rounded-pill border px-3.5 py-2.5 text-[13px] transition-colors md:px-3 md:py-1.5 md:text-xs ${
         selected
-          ? 'border-slate-900 bg-slate-900 text-white'
-          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'
+          ? 'border-inverse bg-inverse text-on-inverse'
+          : 'border-line bg-surface text-ink-soft hover:border-faint'
       }`}
     >
       {color && (
         <span
-          className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white"
+          className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-surface"
           style={{ backgroundColor: color }}
         />
       )}
@@ -59,7 +59,7 @@ function Chip({
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-2 text-[11px] font-semibold tracking-wide text-slate-500">{title}</h2>
+      <h2 className="mb-2 text-[11px] font-semibold tracking-wide text-muted">{title}</h2>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </section>
   )
@@ -87,7 +87,7 @@ export default function FilterPanel({ filter, onChange, availableWards }: Props)
           </Chip>
         ))}
       </Section>
-      <p className="-mt-3 text-[11px] text-slate-400">
+      <p className="-mt-3 text-[11px] text-faint">
         シーンは、選んだものすべてに当てはまるスポットを表示します
       </p>
 
@@ -139,7 +139,7 @@ export default function FilterPanel({ filter, onChange, availableWards }: Props)
           </Chip>
         ))}
       </Section>
-      <p className="-mt-3 text-[11px] text-slate-400">
+      <p className="-mt-3 text-[11px] text-faint">
         「昼・夜どちらも」のスポットは、昼・夜どちらを選んでも表示されます
       </p>
 
@@ -147,7 +147,7 @@ export default function FilterPanel({ filter, onChange, availableWards }: Props)
         type="button"
         onClick={() => onChange(EMPTY_FILTER)}
         disabled={countActiveFilters(filter) === 0}
-        className="self-start text-xs text-slate-500 underline transition-colors hover:text-slate-900 disabled:no-underline disabled:opacity-40"
+        className="self-start text-xs text-muted underline transition-colors hover:text-ink disabled:no-underline disabled:opacity-40"
       >
         条件をすべてクリア
       </button>

@@ -29,7 +29,7 @@ export function TabBar() {
     <nav
       aria-label="画面の切り替え"
       // pb-[env(safe-area-inset-bottom)]: iPhone の画面下の「ホームバー」に重ならないよう余白を足す
-      className="z-30 flex shrink-0 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="z-30 flex shrink-0 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {tabs.map((tab) => (
         <Link
@@ -37,13 +37,13 @@ export function TabBar() {
           href={tab.href}
           aria-current={tab.active ? 'page' : undefined}
           className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${
-            tab.active ? 'font-bold text-slate-900' : 'text-slate-500'
+            tab.active ? 'font-bold text-ink' : 'text-muted'
           }`}
         >
           <span className="text-lg leading-none">{tab.icon}</span>
           {tab.label}
           {tab.badge !== null && (
-            <span className="absolute top-1 left-1/2 ml-2 min-w-4 rounded-full bg-rose-600 px-1 text-[10px] leading-4 font-bold text-white">
+            <span className="absolute top-1 left-1/2 ml-2 min-w-4 rounded-full bg-accent px-1 text-[10px] leading-4 font-bold text-on-accent">
               {tab.badge}
             </span>
           )}
@@ -64,7 +64,7 @@ export function HeaderNav() {
           href={tab.href}
           aria-current={tab.active ? 'page' : undefined}
           className={`rounded-md px-2.5 py-1.5 text-xs transition-colors ${
-            tab.active ? 'bg-slate-900 font-semibold text-white' : 'text-slate-600 hover:bg-slate-100'
+            tab.active ? 'bg-inverse font-semibold text-on-inverse' : 'text-ink-mid hover:bg-sunken'
           }`}
         >
           {tab.icon} {tab.label}

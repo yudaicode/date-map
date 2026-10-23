@@ -16,7 +16,7 @@ import type { ComponentProps } from 'react'
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
+    <div className="flex h-full w-full items-center justify-center bg-sunken text-sm text-muted">
       地図を読み込み中…
     </div>
   ),

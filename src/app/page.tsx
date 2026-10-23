@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center bg-slate-100 text-sm text-slate-500">
+        <div className="flex h-full items-center justify-center bg-sunken text-sm text-muted">
           読み込み中…
         </div>
       }

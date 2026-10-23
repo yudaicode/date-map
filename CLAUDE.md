@@ -124,6 +124,7 @@ src/
 │   │   ├── BulkImportScreen.tsx                  まとめて登録（/admin/spots/bulk）
 │   │   └── LocationPicker(+Client).tsx           ピンをドラッグして位置調整
 │   └── ui/StatusMessage.tsx, AppNav.tsx      読み込み中・エラー表示 / 地図・スワイプ・保存のタブ
+│       └── useTheme.ts                       着せ替えのテーマを画面で使うフック
 ├── constants/                        選択肢の定義（フィルタUIの元ネタ）
 │   └── wards.ts / genres.ts / budgets.ts / timeOfDay.ts / scenes.ts
 ├── types/spot.ts                     スポット1件のデータの形（iOS版と共有する中心）
@@ -135,6 +136,7 @@ src/
     ├── geocode.ts                        住所・施設名の検索（/api/geocode, /api/place-search を呼ぶ）
     ├── storage/spotImages.ts             写真の縮小とアップロード（Supabase Storage）
     ├── saved/savedSpots.ts               保存したスポット（今は端末内。会員登録時に差し替える）
+    ├── theme/themes.ts, themeStore.ts    着せ替えのテーマ一覧 / 選んだテーマを端末に記録
     ├── sns.ts                            投稿URLの判定・整形・埋め込みURL（iOS版と共有する中心）
     └── validation/spotInput.ts           一括登録データの検査（日本語の値も受け付ける）
 
@@ -361,6 +363,8 @@ SNSより**速くて迷わない**こと。場所が地図で一発、条件（�
 |---|---|---|
 | A | ズームするとピンが写真サムネイルに変わる（Snapchat風）＋管理画面に写真の登録欄 | **完了**（0003実行・公開済み） |
 | B | スワイプ画面: 絞り込み → スワイプ → 保存リスト。保存したスポットは地図に常にサムネイル表示 | **完了**（2026-10-23 公開） |
+| C | 着せ替え（テーマ）の土台: 色・角丸・見出し文字・地図の見た目をテーマで切り替えられる仕組み | 実装済み・オーナー確認待ち |
+| D | テーマを増やす（候補: 甘めポップ / 夜デート・ダーク / 雑誌風）＋着せ替えボタン | 未着手 |
 
 ### 画像の方針（重要）
 - **SNS投稿のサムネイル画像は使わない。** TikTok の oEmbed は画像URLを返さなくなっており（2026-10確認）、
@@ -422,6 +426,30 @@ SNSより**速くて迷わない**こと。場所が地図で一発、条件（�
 - 埋め込みの上ではスワイプできない（TikTok 側が指の動きを受け取るため。仕様）
 - dev サーバーが前のセッションから残っていると、CSS の変更が反映されず古い見た目のままになることがある。
   `npm run dev` が「Another next dev server is already running」と出たら、表示された PID を止めて起動し直す
+
+### 段階C（着せ替えの土台）でやったこと
+- 方針: 1つに絞らず**利用者が見た目を選べる**ようにする（2026-10-23 オーナー決定）。
+  3案の比較ページ: https://claude.ai/artifact/UhxZXfnEYdiXDSvGf6VHf4
+- `globals.css` 冒頭に「テーマの値」`--t-〇〇` を定義（`[data-theme="standard"]` = 今までの見た目と同じ値）。
+  Tailwind の `@theme inline` で `bg-surface` `text-muted` `bg-accent` `rounded-card` `font-display` などのクラスとして使える
+  - **一般向けの画面では `slate-〇〇` `rose-〇〇` `bg-white` などの固定の色を使わない**（テーマが効かなくなる）。
+    例外: ジャンル色のバッジの白文字、緑の「保存」スタンプ、黄色の「下書き」表示、↺ の色
+  - 地図の目印・吹き出し（`MapView` の HTML 内の style も）も `var(--t-〇〇)` を使う
+- `lib/theme/themes.ts`（テーマの一覧と地図スタイル）/ `lib/theme/themeStore.ts`（端末に記録 `date-map:theme:v1`）/
+  `components/ui/useTheme.ts`（画面で使うフック）
+- 開いた瞬間に標準の色がチラッと見えないよう、`app/layout.tsx` の `<head>` の小さなスクリプトが
+  React より先に `<html data-theme>` を付け替える（`suppressHydrationWarning` はそのための印）
+- 地図: `createBaseMap` がテーマの地図スタイルで作り、切り替えたら `setStyle` で差し替える。
+  日本語ラベルは `style.load` で毎回かけ直す。管理画面の地図は `followTheme: false`
+- **管理画面は着せ替えの対象外**（`admin/layout.tsx` で `data-theme="standard"` に固定）
+- 検証: tsc / lint / build。ヘッドレスChromeで標準テーマが今までと同じ見た目であること、
+  わざと派手な検査用テーマを当てて地図・吹き出し・目印・スワイプ・保存・詳細がすべて追従すること、
+  管理画面は変わらないこと、記録したテーマ名の読み込み（知らない名前は無視）。エラー0
+
+### 段階C の既知の留保事項
+- テーマはまだ「スタンダード」1つだけなので、着せ替えボタンは無い（段階Dで追加）
+- 地図スタイルの差し替え（`setStyle`）は、2つめのテーマを足したときに実地で確認する
+- 地図の拡大縮小ボタンと出典表示は MapLibre 標準の白のまま（暗いテーマを作るときに合わせる）
 
 ---
 

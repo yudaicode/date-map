@@ -45,7 +45,7 @@ function applyMarkerState(entries: Map<string, MarkerEntry>, savedIds: Set<strin
     entry.popup.setOffset(popupOffsetFor(saved && zoomMode === 'pin' ? 'mini' : zoomMode))
     entry.saveButton.textContent = saved ? '♥ 保存済み' : '♡ 保存'
     entry.saveButton.setAttribute('aria-pressed', String(saved))
-    entry.saveButton.style.color = saved ? '#e11d48' : '#0f172a'
+    entry.saveButton.style.color = saved ? 'var(--t-accent)' : 'var(--t-ink)'
   })
 }
 
@@ -74,15 +74,15 @@ function createPopupContent(
         : ''
     }
     <div style="font-weight:700;font-size:14px;margin-bottom:4px">${escapeHtml(spot.name)}</div>
-    <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
+    <div style="font-size:12px;color:var(--t-ink-mid);margin-bottom:6px">
       ${escapeHtml(wardLabel(spot.ward))} ・ ${escapeHtml(g?.label ?? spot.genre)}
     </div>
-    <div style="font-size:12px;color:#4b5563;margin-bottom:6px">
+    <div style="font-size:12px;color:var(--t-ink-mid);margin-bottom:6px">
       ${escapeHtml(budgetLabel(spot.budget_band))} ・ ${escapeHtml(timeOfDayLabel(spot.time_of_day))}
     </div>
     ${
       spot.scenes.length > 0
-        ? `<div style="font-size:11px;color:#334155;margin-bottom:6px">${spot.scenes
+        ? `<div style="font-size:11px;color:var(--t-ink-soft);margin-bottom:6px">${spot.scenes
             .map((s) => `#${escapeHtml(sceneLabel(s))}`)
             .join(' ')}</div>`
         : ''
@@ -96,7 +96,7 @@ function createPopupContent(
   link.href = `/spots/${spot.id}`
   link.textContent = '詳しく見る →'
   link.style.cssText =
-    'font-size:12px;font-weight:600;color:#0f172a;text-decoration:underline'
+    'font-size:12px;font-weight:600;color:var(--t-ink);text-decoration:underline'
   link.addEventListener('click', (event) => {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return
     event.preventDefault()
@@ -107,7 +107,7 @@ function createPopupContent(
   const saveButton = document.createElement('button')
   saveButton.type = 'button'
   saveButton.style.cssText =
-    'font-size:12px;font-weight:700;padding:6px 10px;border:1px solid #e2e8f0;border-radius:9999px;background:#fff;cursor:pointer'
+    'font-size:12px;font-weight:700;padding:6px 10px;border:1px solid var(--t-line);border-radius:var(--t-radius-pill);background:var(--t-surface);cursor:pointer'
   saveButton.addEventListener('click', () => onToggleSave(spot))
 
   const actions = document.createElement('div')

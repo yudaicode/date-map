@@ -7,7 +7,8 @@ import Link from 'next/link'
  */
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-full flex-col bg-slate-50">
+    // data-theme="standard": 管理画面は着せ替えの対象外。どのテーマを選んでいても標準の見た目にする
+    <div data-theme="standard" className="flex h-full flex-col bg-slate-50 text-ink">
       <header className="shrink-0 border-b border-slate-200 bg-white px-4 py-3">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           <Link href="/admin" className="text-sm font-bold tracking-tight">

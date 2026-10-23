@@ -20,6 +20,8 @@ import {
   MIN_ZOOM,
   TOKYO_23KU_BOUNDS,
 } from '@/lib/map/config'
+import { getThemeId, subscribeTheme } from '@/lib/theme/themeStore'
+import { themeById } from '@/lib/theme/themes'
 
 /**
  * 共通設定を済ませた地図を作る。
@@ -36,8 +38,16 @@ export function createBaseMap(
      * （そうしないと、地図の上で指を動かしてもページがスクロールできなくなる）
      */
     cooperativeGestures?: boolean
+    /**
+     * true（省略時）: 着せ替えのテーマに合わせて地図の見た目も変え、切り替えにも追従する。
+     * 管理画面の地図はテーマに関係なく標準の見た目にするため false を渡す
+     */
+    followTheme?: boolean
   }
 ): MapLibreMap {
+  const followTheme = options.followTheme ?? true
+  let styleUrl = followTheme ? themeById(getThemeId()).mapStyleUrl : MAP_STYLE_URL
+
   // 地図データを裏で処理する「ワーカー」の場所を明示的に指定する。
   // MapLibre v6 は本来この場所を自分で推測するが、Next.js がファイルをまとめると
   // 推測が外れて空になり、ブラウザに "Worker failed to load" というエラーが出る。
@@ -46,7 +56,7 @@ export function createBaseMap(
 
   const map = new MapLibreMap({
     container,
-    style: MAP_STYLE_URL,
+    style: styleUrl,
     center: options.center, // [経度, 緯度] の順番
     zoom: options.zoom,
     minZoom: MIN_ZOOM,
@@ -72,7 +82,19 @@ export function createBaseMap(
 
   // スタイル（地図の見た目データ）の読み込みが終わってから日本語化する。
   // 読み込み前に実行しても、まだレイヤーが存在しないため効果がない。
-  map.on('load', () => applyJapaneseLabels(map))
+  // 'style.load' は最初の読み込みに加え、テーマの切り替えで見た目を差し替えたときにも起きる
+  map.on('style.load', () => applyJapaneseLabels(map))
+
+  // テーマが切り替わったら地図の見た目も差し替える（目印や吹き出しはそのまま残る）
+  if (followTheme) {
+    const unsubscribe = subscribeTheme(() => {
+      const next = themeById(getThemeId()).mapStyleUrl
+      if (next === styleUrl) return
+      styleUrl = next
+      map.setStyle(next)
+    })
+    map.on('remove', unsubscribe) // 地図を片付けるときに見張りもやめる
+  }
   return map
 }
 

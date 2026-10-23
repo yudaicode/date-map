@@ -97,10 +97,10 @@ export default function SpotsScreen() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3">
         <div className="min-w-0">
-          <h1 className="text-base font-bold tracking-tight">デートマップ</h1>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <h1 className="font-display text-base font-bold tracking-tight">デートマップ</h1>
+          <p className="mt-0.5 text-xs text-muted">
             {/* スマホ幅では1行に収まるよう説明を省く */}
             <span className="hidden sm:inline">東京23区のデートスポット </span>
             {status === 'ready'
@@ -120,8 +120,8 @@ export default function SpotsScreen() {
             aria-expanded={panelOpen}
             className={`rounded-md border px-2.5 py-1.5 text-xs transition-colors md:hidden ${
               activeCount > 0
-                ? 'border-slate-900 bg-slate-900 text-white'
-                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'border-inverse bg-inverse text-on-inverse'
+                : 'border-line text-ink-mid hover:bg-sunken'
             }`}
           >
             絞り込み{activeCount > 0 && `（${activeCount}）`}
@@ -129,7 +129,7 @@ export default function SpotsScreen() {
           <HeaderNav />
           <Link
             href="/admin"
-            className="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-50"
+            className="rounded-md border border-line px-2.5 py-1.5 text-xs text-ink-mid transition-colors hover:bg-sunken"
           >
             管理
           </Link>
@@ -143,13 +143,13 @@ export default function SpotsScreen() {
         <aside
           className={`${
             panelOpen ? 'block' : 'hidden'
-          } absolute inset-x-0 top-0 z-20 max-h-[75%] overflow-y-auto border-b border-slate-200 bg-white p-4 shadow-lg md:static md:block md:max-h-none md:w-72 md:shrink-0 md:border-r md:border-b-0 md:shadow-none`}
+          } absolute inset-x-0 top-0 z-20 max-h-[75%] overflow-y-auto border-b border-line bg-surface p-4 shadow-lg md:static md:block md:max-h-none md:w-72 md:shrink-0 md:border-r md:border-b-0 md:shadow-none`}
         >
           <FilterPanel filter={filter} onChange={updateFilter} availableWards={availableWards} />
           <button
             type="button"
             onClick={() => setPanelOpen(false)}
-            className="mt-5 w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white md:hidden"
+            className="mt-5 w-full rounded-md bg-inverse px-4 py-2.5 text-sm font-semibold text-on-inverse md:hidden"
           >
             {visibleSpots.length}件を地図で見る
           </button>
@@ -180,10 +180,10 @@ export default function SpotsScreen() {
                   type="button"
                   onClick={() => updateFilter(filter, !onlySaved)}
                   aria-pressed={onlySaved}
-                  className={`absolute top-3 left-3 z-10 rounded-full border px-3.5 py-2 text-xs font-bold shadow-md transition-colors ${
+                  className={`absolute top-3 left-3 z-10 rounded-pill border px-3.5 py-2 text-xs font-bold shadow-md transition-colors ${
                     onlySaved
-                      ? 'border-rose-600 bg-rose-600 text-white'
-                      : 'border-white bg-white text-rose-600'
+                      ? 'border-accent bg-accent text-on-accent'
+                      : 'border-white bg-surface text-accent'
                   }`}
                 >
                   ♥ 保存したスポットだけ（{savedIds.size}）
@@ -201,7 +201,7 @@ export default function SpotsScreen() {
 
               {status === 'ready' && spots.length > 0 && visibleSpots.length === 0 && (
                 <div className="absolute inset-x-0 bottom-10 z-10 px-4">
-                  <div className="mx-auto max-w-md rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                  <div className="mx-auto max-w-md rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink-soft shadow-sm">
                     <p className="font-semibold">条件に合うスポットがありません</p>
                     <p className="mt-1 text-xs">条件を減らすと見つかるかもしれません。</p>
                     <button

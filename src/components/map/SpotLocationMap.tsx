@@ -24,5 +24,5 @@ export default function SpotLocationMap({ spot }: { spot: Spot }) {
     return () => map.remove()
   }, [spot])
 
-  return <div ref={containerRef} className="h-64 w-full rounded-lg border border-slate-200" />
+  return <div ref={containerRef} className="h-64 w-full rounded-lg border border-line" />
 }

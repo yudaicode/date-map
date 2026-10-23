@@ -11,7 +11,7 @@ export default function SwipePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center bg-slate-50 text-sm text-slate-500">
+        <div className="flex h-full items-center justify-center bg-canvas text-sm text-muted">
           読み込み中…
         </div>
       }

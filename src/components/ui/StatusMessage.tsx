@@ -10,8 +10,8 @@ export function StatusMessage({
 }) {
   const color =
     tone === 'error'
-      ? 'border-rose-200 bg-rose-50 text-rose-900'
-      : 'border-slate-200 bg-white text-slate-700'
+      ? 'border-accent-line bg-accent-soft text-accent-strong'
+      : 'border-line bg-surface text-ink-soft'
 
   return (
     <div className={`mx-auto max-w-md rounded-lg border px-4 py-3 text-sm shadow-sm ${color}`}>

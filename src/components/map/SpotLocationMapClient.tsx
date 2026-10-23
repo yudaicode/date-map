@@ -10,7 +10,7 @@ import type { Spot } from '@/types/spot'
 const SpotLocationMap = dynamic(() => import('./SpotLocationMap'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-64 w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-sm text-slate-500">
+    <div className="flex h-64 w-full items-center justify-center rounded-lg border border-line bg-sunken text-sm text-muted">
       地図を読み込み中…
     </div>
   ),

@@ -39,6 +39,7 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
       center: [lng, lat],
       zoom: 16,
       cooperativeGestures: true, // フォームのスクロールを邪魔しないため
+      followTheme: false, // 管理画面は着せ替えに関係なく標準の見た目
     })
 
     // draggable: true でピンをつまんで動かせるようになる
