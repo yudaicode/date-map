@@ -21,6 +21,32 @@ type Props = {
   fitToSpots: boolean
   /** 吹き出しの「詳しく見る」が押されたときに呼ばれる */
   onOpenDetail: (spot: Spot) => void
+  /** 保存したスポットの id。保存したスポットはズームに関係なく常にサムネイルで出す */
+  savedIds: Set<string>
+  /** 吹き出しの「♡ 保存」が押されたときに呼ばれる */
+  onToggleSave: (spot: Spot) => void
+}
+
+/** 置いた目印1個分の部品。保存の状態が変わったときに見た目を直すために覚えておく */
+type MarkerEntry = {
+  element: HTMLElement
+  popup: Popup
+  saveButton: HTMLButtonElement
+}
+
+/**
+ * 目印の見た目を、いまのズームと保存の状態に合わせる。
+ * 保存したスポットは、引いた地図でもサムネイル＋♥ で目立たせる。
+ */
+function applyMarkerState(entries: Map<string, MarkerEntry>, savedIds: Set<string>, zoomMode: MarkerMode) {
+  entries.forEach((entry, id) => {
+    const saved = savedIds.has(id)
+    entry.element.classList.toggle('is-saved', saved)
+    entry.popup.setOffset(popupOffsetFor(saved && zoomMode === 'pin' ? 'mini' : zoomMode))
+    entry.saveButton.textContent = saved ? '♥ 保存済み' : '♡ 保存'
+    entry.saveButton.setAttribute('aria-pressed', String(saved))
+    entry.saveButton.style.color = saved ? '#e11d48' : '#0f172a'
+  })
 }
 
 /** 文字列をHTMLに安全に埋め込むための処理（< > などを無害な文字に変換する） */
@@ -33,7 +59,11 @@ function escapeHtml(value: string): string {
 }
 
 /** ピンをクリックしたときに出る吹き出しの中身 */
-function createPopupContent(spot: Spot, onOpenDetail: (spot: Spot) => void): HTMLElement {
+function createPopupContent(
+  spot: Spot,
+  onOpenDetail: (spot: Spot) => void,
+  onToggleSave: (spot: Spot) => void
+): { el: HTMLElement; saveButton: HTMLButtonElement } {
   const g = genre(spot.genre)
   const el = document.createElement('div')
   el.style.cssText = 'font-family:inherit;max-width:240px'
@@ -66,31 +96,46 @@ function createPopupContent(spot: Spot, onOpenDetail: (spot: Spot) => void): HTM
   link.href = `/spots/${spot.id}`
   link.textContent = '詳しく見る →'
   link.style.cssText =
-    'display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:#0f172a;text-decoration:underline'
+    'font-size:12px;font-weight:600;color:#0f172a;text-decoration:underline'
   link.addEventListener('click', (event) => {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return
     event.preventDefault()
     onOpenDetail(spot)
   })
-  el.appendChild(link)
-  return el
+
+  // 保存ボタン。文字（♡ 保存 / ♥ 保存済み）は applyMarkerState が書き換える
+  const saveButton = document.createElement('button')
+  saveButton.type = 'button'
+  saveButton.style.cssText =
+    'font-size:12px;font-weight:700;padding:6px 10px;border:1px solid #e2e8f0;border-radius:9999px;background:#fff;cursor:pointer'
+  saveButton.addEventListener('click', () => onToggleSave(spot))
+
+  const actions = document.createElement('div')
+  actions.style.cssText =
+    'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px'
+  actions.append(link, saveButton)
+  el.appendChild(actions)
+  return { el, saveButton }
 }
 
-export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
+export default function MapView({ spots, fitToSpots, onOpenDetail, savedIds, onToggleSave }: Props) {
   // useRef は「画面のこの場所」を覚えておくための箱。
   // 地図はこの div の中に描かれます。
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
-  // いま置いてある吹き出しの一覧（ピン⇔サムネイルの切り替え時に位置を直すため）
-  const popupsRef = useRef<Popup[]>([])
-  // いまの表示が 'pin'（ピン）か 'thumb'（サムネイル）か
+  // いま置いてある目印の一覧（スポットの id → 部品）。ズームや保存の変化で見た目を直すため
+  const entriesRef = useRef(new Map<string, MarkerEntry>())
+  // いまのズームでの表示が 'pin'（ピン）か 'thumb'（サムネイル）か
   const modeRef = useRef<MarkerMode>('pin')
+  const savedIdsRef = useRef(savedIds)
 
-  // 最新の onOpenDetail を覚えておく箱（LocationPicker.tsx と同じ理由）
+  // 最新の onOpenDetail / onToggleSave を覚えておく箱（LocationPicker.tsx と同じ理由）
   const onOpenDetailRef = useRef(onOpenDetail)
+  const onToggleSaveRef = useRef(onToggleSave)
   useEffect(() => {
     onOpenDetailRef.current = onOpenDetail
-  }, [onOpenDetail])
+    onToggleSaveRef.current = onToggleSave
+  }, [onOpenDetail, onToggleSave])
 
   // 1つめの useEffect: 画面が表示されたときに地図を1回だけ作る
   useEffect(() => {
@@ -106,7 +151,7 @@ export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
       if (mode === modeRef.current) return
       modeRef.current = mode
       map.getContainer().classList.toggle('map-thumbs', mode === 'thumb')
-      popupsRef.current.forEach((popup) => popup.setOffset(popupOffsetFor(mode)))
+      applyMarkerState(entriesRef.current, savedIdsRef.current, mode)
     }
     map.on('zoom', syncMarkerMode)
 
@@ -126,17 +171,23 @@ export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
     // 北にあるスポットから順に置く。後から置いたものが上に重なるので、
     // サムネイル同士が重なったとき、画面の下側（手前）にあるものが上に見えて自然になる
     const ordered = [...spots].sort((a, b) => b.lat - a.lat)
-    const popups: Popup[] = []
+    const entries = new Map<string, MarkerEntry>()
     const markers = ordered.map((spot) => {
-      const popup = new Popup({ offset: popupOffsetFor(modeRef.current), closeButton: true })
-        .setDOMContent(createPopupContent(spot, (s) => onOpenDetailRef.current(s)))
-      popups.push(popup)
-      return new Marker({ element: createPinElement(spot), anchor: 'bottom' })
+      const { el, saveButton } = createPopupContent(
+        spot,
+        (s) => onOpenDetailRef.current(s),
+        (s) => onToggleSaveRef.current(s)
+      )
+      const popup = new Popup({ closeButton: true }).setDOMContent(el)
+      const element = createPinElement(spot)
+      entries.set(spot.id, { element, popup, saveButton })
+      return new Marker({ element, anchor: 'bottom' })
         .setLngLat([spot.lng, spot.lat]) // 経度, 緯度 の順番
         .setPopup(popup)
         .addTo(map)
     })
-    popupsRef.current = popups
+    entriesRef.current = entries
+    applyMarkerState(entries, savedIdsRef.current, modeRef.current)
 
     // 絞り込み中は、残ったピンが全部見える位置まで地図を動かす
     if (fitToSpots && spots.length > 0) {
@@ -151,6 +202,12 @@ export default function MapView({ spots, fitToSpots, onOpenDetail }: Props) {
       markers.forEach((m) => m.remove())
     }
   }, [spots, fitToSpots])
+
+  // 3つめの useEffect: 保存が変わったら、目印を作り直さずに見た目（サムネイル・♥）だけ直す
+  useEffect(() => {
+    savedIdsRef.current = savedIds
+    applyMarkerState(entriesRef.current, savedIds, modeRef.current)
+  }, [savedIds])
 
   return <div ref={containerRef} className="h-full w-full" />
 }

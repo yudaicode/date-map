@@ -33,6 +33,11 @@ body {
   line-height: 1;
 }
 
+/* 吹き出しは、どの目印（保存済み・指を乗せた目印は少し上の段にいる）よりも手前に出す */
+.maplibregl-popup {
+  z-index: 10;
+}
+
 /* ------------------------------------------------------------
    地図の目印（mapParts.ts の createPinElement が作る）
    普段はピン。地図の外枠に .map-thumbs が付くと（＝ズームしたとき）サムネイルに変わる。
@@ -133,12 +138,60 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.map-thumbs .spot-marker__pin {
+.map-thumbs .spot-marker__pin,
+.spot-marker.is-saved .spot-marker__pin {
   display: none;
 }
-.map-thumbs .spot-marker__thumb {
+.map-thumbs .spot-marker__thumb,
+.spot-marker.is-saved .spot-marker__thumb {
   display: flex;
   animation: spot-marker-pop 0.2s ease-out;
+}
+
+/* 保存したスポット（スワイプで右・♡ を押した）は、引いた地図でも常にサムネイル＋♥ で出す */
+.spot-marker.is-saved {
+  z-index: 2;
+}
+.spot-marker.is-saved .spot-marker__photo {
+  border-color: #e11d48;
+}
+.spot-marker__heart {
+  display: none;
+  position: absolute;
+  /* 写真（幅70px・中央寄せ）の右上の角に置く。名前が長いと枠の幅が変わるので中央から測る */
+  top: -6px;
+  left: calc(50% + 22px);
+  width: 22px;
+  height: 22px;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  background: #e11d48;
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.spot-marker.is-saved .spot-marker__heart {
+  display: block;
+}
+/* 引いた地図（ピン表示の倍率）では、保存したスポットを小さめのサムネイル（名前なし）にする。
+   大きいままだと、近いスポット同士が重なって地図が見えなくなるため */
+.maplibregl-map:not(.map-thumbs) .spot-marker.is-saved .spot-marker__photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 20px;
+}
+.maplibregl-map:not(.map-thumbs) .spot-marker.is-saved .spot-marker__name {
+  display: none;
+}
+.maplibregl-map:not(.map-thumbs) .spot-marker.is-saved .spot-marker__heart {
+  left: calc(50% + 12px);
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+  line-height: 14px;
 }
 @keyframes spot-marker-pop {
   from {
@@ -152,7 +205,8 @@ body {
 }
 /* 「動きを減らす」設定の人には、ポンと出るアニメーションをしない */
 @media (prefers-reduced-motion: reduce) {
-  .map-thumbs .spot-marker__thumb {
+  .map-thumbs .spot-marker__thumb,
+  .spot-marker.is-saved .spot-marker__thumb {
     animation: none;
   }
 }

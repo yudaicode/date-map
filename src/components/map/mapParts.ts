@@ -145,7 +145,11 @@ export function createPinElement(spot: Spot): HTMLElement {
   const name = document.createElement('div')
   name.className = 'spot-marker__name'
   name.textContent = spot.name
-  thumb.append(photo, name)
+  // 保存したスポットにだけ出る ♥ の印（CSS の .is-saved で表示）
+  const heart = document.createElement('span')
+  heart.className = 'spot-marker__heart'
+  heart.textContent = '♥'
+  thumb.append(photo, name, heart)
 
   el.append(pin, thumb)
   return el
@@ -155,6 +159,8 @@ export function createPinElement(spot: Spot): HTMLElement {
 export const MARKER_SIZE = {
   pin: { width: 34, height: 42 },
   thumb: { width: 70, height: 84 },
+  // 引いた地図での「保存したスポット」の小さめのサムネイル（名前なし）
+  mini: { width: 50, height: 58 },
 } as const
 
 export type MarkerMode = keyof typeof MARKER_SIZE

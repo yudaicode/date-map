@@ -17,6 +17,8 @@ import {
   type SpotFilter,
 } from '@/lib/filters/spotFilter'
 import { saveMapQuery } from '@/components/spot/mapQueryMemory'
+import { useSavedSpots } from '@/components/spot/useSavedSpots'
+import { HeaderNav, TabBar } from '@/components/ui/AppNav'
 import type { Spot } from '@/types/spot'
 
 /**
@@ -63,18 +65,27 @@ export default function SpotsScreen() {
 
   // useMemo は「元の値が変わったときだけ計算し直す」仕組み。
   // 毎回計算し直すと、地図のピンが無駄に置き直されてしまうため。
+  const { savedIds, toggleSaved } = useSavedSpots()
   const filter = useMemo(() => filterFromSearchParams(searchParams), [searchParams])
-  const visibleSpots = useMemo(() => filterSpots(spots, filter), [spots, filter])
+  // ?saved=1 のときは、保存したスポットだけを表示する（スワイプ・保存一覧の「地図で見る」から来る）
+  const onlySaved = searchParams.get('saved') === '1'
+  const visibleSpots = useMemo(() => {
+    const filtered = filterSpots(spots, filter)
+    return onlySaved ? filtered.filter((s) => savedIds.has(s.id)) : filtered
+  }, [spots, filter, onlySaved, savedIds])
   const availableWards = useMemo(() => [...new Set(spots.map((s) => s.ward))], [spots])
   const activeCount = countActiveFilters(filter)
 
-  function updateFilter(next: SpotFilter) {
-    const query = filterToQueryString(next)
+  function updateFilter(next: SpotFilter, nextOnlySaved = onlySaved) {
+    const filterQuery = filterToQueryString(next)
+    const query = nextOnlySaved ? (filterQuery ? `saved=1&${filterQuery}` : 'saved=1') : filterQuery
     // replaceState: ページを読み込み直さずにURLだけ書き換える。
     // Next.js はこれを検知して useSearchParams の値を更新してくれる。
     // （push ではなく replace なのは、ボタンを押すたびに「戻る」の履歴が増えないようにするため）
     window.history.replaceState(null, '', query ? `/?${query}` : '/')
   }
+
+  const handleToggleSave = useCallback((spot: Spot) => toggleSaved(spot.id), [toggleSaved])
 
   const openDetail = useCallback(
     (spot: Spot) => {
@@ -93,7 +104,7 @@ export default function SpotsScreen() {
             {/* スマホ幅では1行に収まるよう説明を省く */}
             <span className="hidden sm:inline">東京23区のデートスポット </span>
             {status === 'ready'
-              ? activeCount > 0
+              ? activeCount > 0 || onlySaved
                 ? `${spots.length}件中 ${visibleSpots.length}件を表示`
                 : `${spots.length}件`
               : status === 'loading'
@@ -115,6 +126,7 @@ export default function SpotsScreen() {
           >
             絞り込み{activeCount > 0 && `（${activeCount}）`}
           </button>
+          <HeaderNav />
           <Link
             href="/admin"
             className="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-50"
@@ -156,9 +168,27 @@ export default function SpotsScreen() {
             <>
               <MapViewClient
                 spots={visibleSpots}
-                fitToSpots={activeCount > 0}
+                fitToSpots={activeCount > 0 || onlySaved}
                 onOpenDetail={openDetail}
+                savedIds={savedIds}
+                onToggleSave={handleToggleSave}
               />
+
+              {/* 保存したスポットだけに切り替えるボタン（地図の左上） */}
+              {status === 'ready' && savedIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => updateFilter(filter, !onlySaved)}
+                  aria-pressed={onlySaved}
+                  className={`absolute top-3 left-3 z-10 rounded-full border px-3.5 py-2 text-xs font-bold shadow-md transition-colors ${
+                    onlySaved
+                      ? 'border-rose-600 bg-rose-600 text-white'
+                      : 'border-white bg-white text-rose-600'
+                  }`}
+                >
+                  ♥ 保存したスポットだけ（{savedIds.size}）
+                </button>
+              )}
 
               {status === 'ready' && spots.length === 0 && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-10 z-10 px-4">
@@ -176,7 +206,7 @@ export default function SpotsScreen() {
                     <p className="mt-1 text-xs">条件を減らすと見つかるかもしれません。</p>
                     <button
                       type="button"
-                      onClick={() => updateFilter(EMPTY_FILTER)}
+                      onClick={() => updateFilter(EMPTY_FILTER, false)}
                       className="mt-2 text-xs font-semibold underline"
                     >
                       条件をすべてクリア
@@ -188,6 +218,8 @@ export default function SpotsScreen() {
           )}
         </main>
       </div>
+
+      <TabBar />
     </div>
   )
 }

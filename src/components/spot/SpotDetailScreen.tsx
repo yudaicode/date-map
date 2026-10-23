@@ -8,6 +8,7 @@ import SpotLocationMapClient from '@/components/map/SpotLocationMapClient'
 import SnsEmbed from '@/components/spot/SnsEmbed'
 import { StatusMessage } from '@/components/ui/StatusMessage'
 import { mapHrefFromMemory } from '@/components/spot/mapQueryMemory'
+import { useSavedSpots } from '@/components/spot/useSavedSpots'
 import { fetchSpot } from '@/lib/queries/spots'
 import { genre } from '@/constants/genres'
 import { wardLabel } from '@/constants/wards'
@@ -89,6 +90,8 @@ export default function SpotDetailScreen() {
     router.push(mapHrefFromMemory()) // 絞り込み条件を付けたまま地図に戻る
   }
 
+  const { savedIds, toggleSaved } = useSavedSpots()
+  const saved = spot ? savedIds.has(spot.id) : false
   const g = spot ? genre(spot.genre) : undefined
   const embeddablePosts = [spot?.instagram_url, spot?.tiktok_url].filter(
     (url): url is string => !!url && snsEmbedUrl(url) !== null
@@ -146,7 +149,21 @@ export default function SpotDetailScreen() {
                   </span>
                 )}
               </div>
-              <h1 className="mt-3 text-xl font-bold tracking-tight">{spot.name}</h1>
+              <div className="mt-3 flex items-start justify-between gap-3">
+                <h1 className="text-xl font-bold tracking-tight">{spot.name}</h1>
+                <button
+                  type="button"
+                  onClick={() => toggleSaved(spot.id)}
+                  aria-pressed={saved}
+                  className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-bold transition-colors ${
+                    saved
+                      ? 'border-rose-600 bg-rose-600 text-white'
+                      : 'border-slate-300 bg-white text-slate-700 hover:border-rose-400'
+                  }`}
+                >
+                  {saved ? '♥ 保存済み' : '♡ 保存'}
+                </button>
+              </div>
               {spot.scenes.length > 0 && (
                 <ul className="mt-2 flex flex-wrap gap-1.5">
                   {spot.scenes.map((scene) => (

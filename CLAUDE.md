@@ -86,6 +86,8 @@ src/
 │   ├── layout.tsx                        全ページ共通の外枠
 │   ├── page.tsx                          「/」= 地図画面（Suspense で SpotsScreen を包むだけ）
 │   ├── spots/[id]/page.tsx               スポット詳細（Suspense で SpotDetailScreen を包むだけ）
+│   ├── swipe/page.tsx                    スワイプで選ぶ（Suspense で SwipeScreen を包むだけ）
+│   ├── saved/page.tsx                    保存したスポットの一覧
 │   ├── globals.css
 │   ├── api/geocode/route.ts              国土地理院APIへの中継（住所→位置）
 │   ├── api/place-search/route.ts         OpenStreetMap Nominatim への中継（施設名→住所・位置の候補）
@@ -107,7 +109,13 @@ src/
 │   │   ├── FilterPanel.tsx                       絞り込みパネル
 │   │   ├── SpotDetailScreen.tsx                  詳細画面の中身
 │   │   ├── mapQueryMemory.ts                     「地図に戻る」用に絞り込み条件を一時保存
-│   │   └── SnsEmbed.tsx                          Instagram / TikTok 公式埋め込み（iframe）
+│   │   ├── SnsEmbed.tsx                          Instagram / TikTok 公式埋め込み（iframe）
+│   │   ├── SavedScreen.tsx                       保存一覧の中身
+│   │   ├── SpotThumb.tsx                         写真 or ジャンル色の代わりの絵
+│   │   └── useSavedSpots.ts                      保存の状態を画面で使うフック
+│   ├── swipe/
+│   │   ├── SwipeScreen.tsx                       絞り込み → スワイプ → 見終わり
+│   │   └── SwipeCard.tsx                         カード1枚（指で動かす・埋め込み）
 │   ├── admin/                                管理画面の部品（すべて client）
 │   │   ├── AdminGuard.tsx                        ログイン確認（UIのみ。防御はRLS）
 │   │   ├── AdminSpotList.tsx                     一覧
@@ -115,7 +123,7 @@ src/
 │   │   ├── SpotForm.tsx                          登録・編集フォーム
 │   │   ├── BulkImportScreen.tsx                  まとめて登録（/admin/spots/bulk）
 │   │   └── LocationPicker(+Client).tsx           ピンをドラッグして位置調整
-│   └── ui/StatusMessage.tsx                  読み込み中・エラー表示の共通部品
+│   └── ui/StatusMessage.tsx, AppNav.tsx      読み込み中・エラー表示 / 地図・スワイプ・保存のタブ
 ├── constants/                        選択肢の定義（フィルタUIの元ネタ）
 │   └── wards.ts / genres.ts / budgets.ts / timeOfDay.ts / scenes.ts
 ├── types/spot.ts                     スポット1件のデータの形（iOS版と共有する中心）
@@ -126,6 +134,7 @@ src/
     ├── filters/spotFilter.ts             絞り込みのルールとURLとの変換（iOS版と共有する中心）
     ├── geocode.ts                        住所・施設名の検索（/api/geocode, /api/place-search を呼ぶ）
     ├── storage/spotImages.ts             写真の縮小とアップロード（Supabase Storage）
+    ├── saved/savedSpots.ts               保存したスポット（今は端末内。会員登録時に差し替える）
     ├── sns.ts                            投稿URLの判定・整形・埋め込みURL（iOS版と共有する中心）
     └── validation/spotInput.ts           一括登録データの検査（日本語の値も受け付ける）
 
@@ -350,8 +359,8 @@ SNSより**速くて迷わない**こと。場所が地図で一発、条件（�
 
 | 段階 | 内容 | 状態 |
 |---|---|---|
-| A | ズームするとピンが写真サムネイルに変わる（Snapchat風）＋管理画面に写真の登録欄 | 実装済み・SQL実行待ち |
-| B | スワイプ画面: 絞り込み → スワイプ → 保存リスト。保存したスポットは地図に常にサムネイル表示 | 未着手 |
+| A | ズームするとピンが写真サムネイルに変わる（Snapchat風）＋管理画面に写真の登録欄 | **完了**（0003実行・公開済み） |
+| B | スワイプ画面: 絞り込み → スワイプ → 保存リスト。保存したスポットは地図に常にサムネイル表示 | 実装済み・オーナー確認待ち |
 
 ### 画像の方針（重要）
 - **SNS投稿のサムネイル画像は使わない。** TikTok の oEmbed は画像URLを返さなくなっており（2026-10確認）、
@@ -383,6 +392,36 @@ SNSより**速くて迷わない**こと。場所が地図で一発、条件（�
 ### 段階A の既知の留保事項
 - 同じ場所に近いスポットが多いと、ズーム直後はサムネイル同士が重なる（まとめ表示は未対応）
 - 写真のアップロードは実ブラウザ（ログインが必要）では未検証。オーナーの確認待ち
+
+### 段階B でやったこと
+- 画面を3つのタブに: 地図 `/` / スワイプ `/swipe` / 保存 `/saved`（`components/ui/AppNav.tsx`）。
+  スマホ幅は画面下のタブ（iPhone のホームバー分の余白つき）、広い画面はヘッダーのリンク
+- 保存: `lib/saved/savedSpots.ts` に読み書きを集約（localStorage キー `date-map:saved:v1`、
+  中身は id と保存日時だけ）。画面からは `components/spot/useSavedSpots.ts`（useSyncExternalStore）で使う。
+  別タブでの変更も storage イベントで反映。**会員登録に移すときはこの2ファイルを差し替える**
+- `/swipe`（`components/swipe/`）: ① 地図と同じ `FilterPanel`（条件は URL `/swipe?...`）
+  ② カードをランダム順で出す（保存済みは除く）③ 見終わったら保存一覧・地図へ
+  - 右＝保存（スワイプした瞬間に保存）/ 左＝パス（記録しない）/ ↺ で1枚戻す（保存も取り消す）/ ← → キー
+  - カード上半分は公式埋め込み（TikTok 優先）。**一番上のカードだけ** iframe を読み込む（重さ対策）。
+    投稿が無ければ写真か代わりの絵（`SpotThumb`）で、その上でもスワイプできる
+  - ボタン・リンクの上から動かし始めたらスワイプにしない（setPointerCapture でクリックが消えるため）
+- `/saved`: 新しく保存した順。削除・非公開になったスポットは出さない。♥ で保存をやめる
+- 地図: 保存したスポットは**ズームに関係なく**サムネイル＋♥（引いた地図では名前なしの小さめ `mini`）。
+  吹き出しに「♡ 保存」ボタン。左上の「♥ 保存したスポットだけ」で `?saved=1`（他の条件と併用可）
+  - 保存の切り替えでは目印を作り直さず、`applyMarkerState()` でクラスと吹き出し位置だけ直す
+  - 吹き出しは `z-index: 10`（保存済みの目印 z=2 より手前に出すため）
+- 詳細画面にも「♡ 保存」ボタン
+- 検証: tsc / lint / build。ヘッドレスChrome（スポットをモック）で、絞り込み→URL反映 / ♥・✕・指ドラッグ /
+  少しだけ動かすと元に戻る / ↺ で保存も取り消し / キーボード / 見終わり画面 / 保存一覧と♥で解除 /
+  地図で保存済みだけサムネイル（ピン2・サムネイル4）/ 保存だけ表示 / 吹き出しから解除 / 詳細の保存ボタン /
+  TikTok 埋め込みカード。エラー0
+
+### 段階B の既知の留保事項
+- 引いた地図で、近い場所の保存済みサムネイルは重なる（段階Aと同じく、まとめ表示は未対応）
+- スワイプの途中で詳細画面などに移ると、カードの束は最初からになる（保存は残る）
+- 埋め込みの上ではスワイプできない（TikTok 側が指の動きを受け取るため。仕様）
+- dev サーバーが前のセッションから残っていると、CSS の変更が反映されず古い見た目のままになることがある。
+  `npm run dev` が「Another next dev server is already running」と出たら、表示された PID を止めて起動し直す
 
 ---
 
